@@ -1,0 +1,11 @@
+// Erros sintáticos: o parser se recupera e relata todos.
+agente robo sprite "guarda.png" {
+    vivo
+    +vivo <- velocidade(10, 0).
+    +parado : vivo velocidade(0, 0).
+    +bateu <- .
+}
+
+agente outro {
+    +x <- mover(1, ).
+}

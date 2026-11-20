@@ -1,0 +1,6 @@
+// Erros léxicos: caractere inválido, número malformado e texto não fechado.
+agente robo sprite "robo.png {
+    vivo.
+    energia(12abc).
+    +vivo <- mover(10, 0) @ girar(5).
+}

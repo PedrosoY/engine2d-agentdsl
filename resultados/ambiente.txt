@@ -1,0 +1,5 @@
+GPU: AMD Radeon(TM) Vega 8 Graphics
+OpenGL: 3.3.0 Core Profile Context 26.1.1.251211
+CPU: AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD
+Python: 3.13.14
+SO: Windows-11-10.0.26300-SP0

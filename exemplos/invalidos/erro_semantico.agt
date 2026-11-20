@@ -1,0 +1,24 @@
+// Erros semânticos: sintaxe correta, mas significado inválido.
+agente robo sprite "guarda.png" {
+    vivo.
+    vida(3).
+    nome(robo).
+    posicao(X, 10).                         // crença inicial com variável
+
+    +vivo <- velocidad(10, 0).              // ação desconhecida
+    +vivo <- mover(10).                     // aridade errada
+    +vivo <- girar(rapido).                 // tipo errado (átomo onde vai número)
+    +vivo <- mover(Y, 0).                   // variável não ligada
+    +vivo : nome(N) <- mover(N * 2, 0).     // conta com átomo
+    +vivo : vida(V) & V > "alto" <- parar.  // comparação numérica com texto
+    +vivo <- perseguir(fantasma, 10).       // alvo não declarado (aviso)
+    +voando <- parar.                       // evento que nunca ocorre (aviso)
+}
+
+agente robo {                               // agente duplicado
+    vivo.
+}
+
+agente filho : pai_inexistente {            // herança de agente inexistente
+    vivo.
+}
