@@ -244,62 +244,104 @@ def test_erro_de_compilacao_levanta_excecao():
     assert "ação desconhecida" in str(e.value)
 
 
-# ---------------------------------------------------------------- integração com a engine
-def test_ponte_executa_acoes_e_gera_percepcoes():
-    from conftest import MotorFalso, TexturaFalsa
-    from agentdsl.ponte_engine import AmbienteEngine
-    from engine2d import Sprite
+def test_operador_resto():
+    sis = SistemaAgentes("agente a { +t(S) : S % 5 == 0 <- parar. }", percepcoes={("t", 1): ("num",)})
+    a = sis.agentes["a"]
+    for s in range(11):
+        a.adicionar("t", (s,))
+    sis.executar_ate_estabilizar()
+    assert len(sis.ambiente.acoes) == 3     # 0, 5 e 10
 
-    amb = AmbienteEngine(MotorFalso(), {"perto", "borda"}, margem=10)
+
+def test_modelo_instancias_independentes():
     sis = SistemaAgentes("""
-    agente g {
-        vivo.
-        +vivo <- velocidade(100, 0); mudar_camada(4).
-        +perto <- perseguir(alvo, 50).
-        -perto <- parar.
-        +borda <- inverter.
-    }""", ambiente=amb, percepcoes={("perto", 0): (), ("borda", 0): ()}, alvos=("alvo",))
-    g = sis.agentes["g"]
-    sp = Sprite(TexturaFalsa(), x=100, y=100)
-    alvo = Sprite(TexturaFalsa(), x=100, y=300)
-    amb.vincular(g, sp)
-    amb.registrar_objeto("alvo", alvo)
-    sis.iniciar()
-    sis.passo()
-    assert sp.camada == 4
-    amb.atualizar(1.0)
-    assert (sp.x, sp.y) == (200, 100)                  # velocidade(100, 0) por 1 s
-    amb.atualizar_percepcoes(g, {("perto", ())})
-    sis.passo()
-    amb.atualizar(1.0)
-    assert sp.x < 200 and sp.y > 100                   # andou em direção ao alvo
-    amb.atualizar_percepcoes(g, set())
-    sis.passo()
-    x = sp.x
-    amb.atualizar(1.0)
-    assert sp.x == x                                    # -perto → parar
-    # borda: velocidade para a direita até sair do mapa (800 px)
-    amb.executar(g, "velocidade", [1000, 0])
-    amb.atualizar(1.0)
-    assert sp.x == 790 and g.acredita("borda")
-    sis.passo()
-    assert amb.estado["g"]["vx"] == -1000              # +borda → inverter
-    amb.atualizar(0.01)
-    assert not g.acredita("borda")                      # pulso removido no quadro seguinte
+    modelo inimigo { vida(3). +dano : vida(V) & V > 1 <- -+vida(V - 1). +dano <- morrer. }
+    agente diretor { comecou. +comecou <- invocar(inimigo, 2). }
+    """, percepcoes={("dano", 0): ()})
+    assert set(sis.agentes) == {"diretor"} and set(sis.modelos) == {"inimigo"}
+    a, b = sis.criar_instancia("inimigo"), sis.criar_instancia("inimigo")
+    assert (a.nome, b.nome) == ("inimigo#1", "inimigo#2")
+    a.adicionar("dano")
+    sis.executar_ate_estabilizar()
+    assert a.crencas_com("vida", 1) == [("vida", (2,))] and b.crencas_com("vida", 1) == [("vida", (3,))]
+    sis.remover_instancia(a)
+    assert a not in sis.todos()
 
 
-def test_exemplo_do_jogo_compila_sem_avisos():
-    import jogo
+@pytest.mark.parametrize("fonte, trecho", [
+    ("agente d { x. +x <- invocar(fantasma, 1). }", "modelo 'fantasma' não foi declarado"),
+    ("agente d { x. +x <- invocar(d, 1). }", "é um agente único, não um modelo"),
+    ("modelo m { } agente d { x. +x : t(N) <- invocar(N, 1). }", "escrito diretamente"),
+])
+def test_tipo_modelo_na_semantica(fonte, trecho):
+    erros = erros_sem(fonte, percepcoes={("t", 1): ("atomo",)})
+    assert any(trecho in e.mensagem for e in erros), [e.mensagem for e in erros]
+
+
+def test_temporizador_conta_como_fonte_da_crenca():
+    # sem o temporizador, +pronta geraria o aviso "nunca será gerado"
+    assert not avisos_sem("agente a { x. +x <- temporizador(1, pronta). +pronta <- parar. }")
+
+
+# ---------------------------------------------------------------- integração com a engine (sem GPU)
+def _cena_com_agentes(fonte, **kw):
+    from agentdsl.componente import ServicoAgentes
+    from engine2d import Cena
+    cena = Cena()
+    cena.criar("Agentes", componentes=[ServicoAgentes(fonte=fonte, **kw)])
+    cena.atualizar(0)
+    return cena
+
+
+def test_servico_agentes_unicos_temporizador_e_invocacao():
+    from agentdsl.componente import ComportamentoAgente
+    from engine2d import CorpoRigido
+    cena = _cena_com_agentes("""
+    modelo bicho { vivo. +vivo <- velocidade(10, 0). }
+    agente chefe { pronto. +pronto <- temporizador(0.5, agora). +agora <- invocar(bicho, 3). }
+    """)
+    srv = cena.servicos["agentes"]
+    assert cena.encontrar("agente chefe") is not None           # agente único ganha GameObject
+    for _ in range(20):
+        cena.atualizar(0.05)                                     # 1 s
+    bichos = [g for g in cena.objetos if g.obter(ComportamentoAgente) and g.nome.startswith("bicho#")]
+    assert len(bichos) == 3 and len(srv.sis.instancias) == 3
+    assert all(g.obter(CorpoRigido).vx == 10 for g in bichos)    # ação velocidade(10, 0) executada
+    bichos[0].destruir()
+    cena.atualizar(0.01)
+    assert len(srv.sis.instancias) == 2                           # destruir remove o agente
+
+
+def test_percepcoes_so_mudancas_viram_eventos_e_pulsos():
+    from agentdsl.componente import ComportamentoAgente
+    cena = _cena_com_agentes("modelo m { +perto <- parar. -perto <- parar. +bateu <- parar. }",
+                             percepcoes={("perto", 0): (), ("bateu", 0): ()})
+    srv = cena.servicos["agentes"]
+    go = srv.criar_corpo("m", 0, 0)
+    cena.atualizar(0)
+    corpo = go.obter(ComportamentoAgente)
+    for _ in range(3):
+        corpo.perceber({("perto", ())})
+        cena.atualizar(0.01)
+    corpo.perceber(set())
+    cena.atualizar(0.01)
+    eventos = [l for l in srv.sis.log if "perto" in l]
+    assert len(eventos) == 2                                     # +perto uma vez, -perto uma vez
+    cena.motor = type("M", (), {"quadro": 1})()                  # pulso precisa do número do quadro
+    corpo.pulsar("bateu")
+    assert corpo.ag.acredita("bateu")
+    cena.motor.quadro = 2
+    cena.atualizar(0.01)
+    assert not corpo.ag.acredita("bateu")                        # pulso sai no quadro seguinte
+
+
+@pytest.mark.parametrize("jogo", ["arena", "torres"])
+def test_programas_dos_jogos_compilam_sem_avisos(jogo):
+    import importlib
     from agentdsl.semantica import ACOES_ENGINE
-    fonte = (EXEMPLOS / "jogo.agt").read_text(encoding="utf-8")
-    sis = SistemaAgentes(fonte, acoes={**ACOES_ENGINE, **jogo.ACOES_JOGO}, percepcoes=jogo.PERCEPCOES,
-                         alvos=jogo.ALVOS)
-    assert not sis.avisos
-    assert set(sis.agentes) == {"guarda", "guarda2", "fujao", "fujao2", "fujao3", "estrela"}
-
-
-@pytest.mark.gpu
-def test_jogo_roda_alguns_quadros():
-    pytest.importorskip("OpenGL")
-    import jogo
-    jogo.main(max_quadros=5)
+    mod = importlib.import_module(f"jogos.{jogo}.{jogo}")
+    raiz = Path(__file__).resolve().parent.parent
+    fonte = (raiz / "jogos" / jogo / f"{jogo}.agt").read_text(encoding="utf-8")
+    acoes = {**ACOES_ENGINE, **{n: a for n, (a, _) in mod.ACOES_JOGO.items()}}
+    sis = SistemaAgentes(fonte, acoes=acoes, percepcoes=mod.PERCEPCOES, alvos=mod.ALVOS)
+    assert not sis.avisos, sis.formatar_avisos()

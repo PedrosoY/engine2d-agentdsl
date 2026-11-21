@@ -20,6 +20,7 @@ from .erros import Diagnostico, Posicao
 
 PALAVRAS_RESERVADAS = {
     "agente": "AGENTE",
+    "modelo": "MODELO",
     "sprite": "SPRITE",
     "em": "EM",
     "camada": "CAMADA",
@@ -32,7 +33,7 @@ SIMBOLOS_2 = {"<-": "SETA", "-+": "MENOS_MAIS", "<=": "MENOR_IGUAL", ">=": "MAIO
               "==": "IGUAL", "!=": "DIFERENTE"}
 SIMBOLOS_1 = {"{": "ABRE_CHAVE", "}": "FECHA_CHAVE", "(": "ABRE_PAR", ")": "FECHA_PAR",
               ",": "VIRGULA", ".": "PONTO", ";": "PONTO_VIRGULA", ":": "DOIS_PONTOS",
-              "&": "E", "+": "MAIS", "-": "MENOS", "*": "VEZES", "/": "DIVIDIDO",
+              "&": "E", "+": "MAIS", "-": "MENOS", "*": "VEZES", "/": "DIVIDIDO", "%": "RESTO",
               "<": "MENOR", ">": "MAIOR"}
 
 

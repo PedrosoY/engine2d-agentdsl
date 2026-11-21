@@ -1,0 +1,168 @@
+// =====================================================================
+//  DEFESA DA BASE — tower defense estilo Bloons, comportamento em AgentDSL
+//
+//  Percepções do jogo:
+//    atingido(D)        levou D de dano neste quadro (pulso)
+//    chegou_ao_fim      o inimigo alcançou a base (pulso)
+//    inimigo_no_alcance há inimigo dentro de alcance(R) da torre
+//    onda(N)            o jogador iniciou a onda N (só o agente "ondas")
+//
+//  Ações do jogo: atirar(Estrategia, Projetil, Dano, Velocidade, Area),
+//    pagar(N), ferir_base(N), trocar_torreta("imagem.png")
+//  Ações da engine: invocar_serie, invocar_aqui, temporizador, piscar, morrer...
+//
+//  O jogo LÊ as crenças alcance(R) e lentidao(F) para gerar percepções e mover.
+// =====================================================================
+
+
+// ------------------------------ INIMIGOS ------------------------------
+// Como nos balões do Bloons: alguns inimigos, ao serem destruídos,
+// liberam inimigos menores no mesmo ponto do caminho (invocar_aqui).
+
+modelo soldado {
+    vida(3).
+    premio(3).
+    dano_base(1).
+
+    +atingido(D) : vida(V) & V > D <- -+vida(V - D); piscar.
+    +atingido(_D) : premio(P) <- pagar(P); morrer.
+    +chegou_ao_fim : dano_base(B) <- ferir_base(B); morrer.
+}
+
+modelo soldado_rapido : soldado {
+    vida(2).
+    premio(4).
+}
+
+modelo blindado : soldado {
+    vida(16).
+    premio(6).
+    dano_base(2).
+    // Blindagem: golpes fracos (até 2) causam só metade do dano.
+    +atingido(D) : D <= 2 & vida(V) & V > D / 2 <- -+vida(V - D / 2); piscar.
+}
+
+modelo tanque : soldado {
+    vida(55).
+    premio(10).
+    dano_base(5).
+    +atingido(D) : vida(V) & V <= D & premio(P) <- pagar(P); invocar_aqui(soldado, 3); morrer.
+}
+
+modelo tanque_pesado : tanque {
+    vida(170).
+    premio(25).
+    dano_base(10).
+    +atingido(D) : vida(V) & V <= D & premio(P) <- pagar(P); invocar_aqui(tanque, 2); morrer.
+}
+
+modelo aviao : soldado {
+    vida(10).
+    premio(8).
+    dano_base(3).
+}
+
+modelo bombardeiro : soldado {
+    vida(2200).
+    premio(300).
+    dano_base(50).
+    +atingido(D) : vida(V) & V <= D & premio(P) <- pagar(P); invocar_aqui(tanque_pesado, 3);
+                                       imprimir("Bombardeiro abatido!"); morrer.
+}
+
+
+// ------------------------------ TORRES --------------------------------
+// Cada torre comprada é uma instância. O jogo troca nivel(N) por nivel(N+1)
+// quando o jogador compra a melhoria; os planos +nivel ajustam os atributos.
+
+modelo metralhadora {
+    nivel(1).
+    pronta.
+    alcance(150).
+    cadencia(0.25).
+    dano(1).
+
+    +nivel(2) <- -+cadencia(0.15); -+alcance(170).
+    +nivel(3) <- -+dano(2); -+cadencia(0.1); trocar_torreta("kenney_td/PNG/Default size/towerDefense_tile204.png").
+
+    // Atira quando fica pronta com inimigo no alcance, OU quando um inimigo entra no alcance.
+    +pronta : inimigo_no_alcance & cadencia(C) & dano(D)
+        <- -pronta; atirar(primeiro, bala, D, 650, 0); temporizador(C, pronta).
+    +inimigo_no_alcance : pronta & cadencia(C) & dano(D)
+        <- -pronta; atirar(primeiro, bala, D, 650, 0); temporizador(C, pronta).
+}
+
+modelo canhao {
+    nivel(1).
+    pronta.
+    alcance(170).
+    cadencia(1.3).
+    dano(3).
+    area(55).
+
+    +nivel(2) <- -+dano(5); -+area(75).
+    +nivel(3) <- -+dano(8); -+cadencia(0.9); -+area(95);
+                 trocar_torreta("kenney_td/PNG/Default size/towerDefense_tile250.png").
+
+    +pronta : inimigo_no_alcance & cadencia(C) & dano(D) & area(A)
+        <- -pronta; atirar(primeiro, bola, D, 420, A); temporizador(C, pronta).
+    +inimigo_no_alcance : pronta & cadencia(C) & dano(D) & area(A)
+        <- -pronta; atirar(primeiro, bola, D, 420, A); temporizador(C, pronta).
+}
+
+modelo missil {
+    nivel(1).
+    pronta.
+    alcance(260).
+    cadencia(2.2).
+    dano(14).
+
+    +nivel(2) <- -+dano(24); -+alcance(320).
+    +nivel(3) <- -+dano(40); -+cadencia(1.4);
+                 trocar_torreta("kenney_td/PNG/Default size/towerDefense_tile206.png").
+
+    // Prefere o inimigo com mais vida.
+    +pronta : inimigo_no_alcance & cadencia(C) & dano(D)
+        <- -pronta; atirar(forte, missil, D, 380, 30); temporizador(C, pronta).
+    +inimigo_no_alcance : pronta & cadencia(C) & dano(D)
+        <- -pronta; atirar(forte, missil, D, 380, 30); temporizador(C, pronta).
+}
+
+modelo gelo {
+    nivel(1).
+    pronta.
+    alcance(120).
+    cadencia(1.0).
+    lentidao(0.55).
+
+    +nivel(2) <- -+lentidao(0.4); -+alcance(140).
+    +nivel(3) <- -+lentidao(0.3); -+cadencia(0.6).
+
+    // Não causa dano: congela todos no alcance (Area = alcance).
+    +pronta : inimigo_no_alcance & cadencia(C) & alcance(R)
+        <- -pronta; atirar(todos, gelo, 0, 0, R); temporizador(C, pronta).
+    +inimigo_no_alcance : pronta & cadencia(C) & alcance(R)
+        <- -pronta; atirar(todos, gelo, 0, 0, R); temporizador(C, pronta).
+}
+
+
+// ------------------------------ ONDAS ---------------------------------
+// invocar_serie(modelo, quantidade, intervalo): várias séries correm em paralelo.
+
+agente ondas {
+    +onda(1)  <- invocar_serie(soldado, 10, 0.9).
+    +onda(2)  <- invocar_serie(soldado, 20, 0.55).
+    +onda(3)  <- invocar_serie(soldado, 12, 0.6); invocar_serie(soldado_rapido, 10, 0.8).
+    +onda(4)  <- invocar_serie(soldado_rapido, 25, 0.4); invocar_serie(blindado, 4, 2).
+    +onda(5)  <- invocar_serie(blindado, 12, 0.9); invocar_serie(tanque, 1, 1);
+                 imprimir("Um tanque se aproxima...").
+    +onda(6)  <- invocar_serie(soldado, 50, 0.2); invocar_serie(tanque, 4, 2.5).
+    +onda(7)  <- invocar_serie(aviao, 20, 0.5); invocar_serie(blindado, 20, 0.6).
+    +onda(8)  <- invocar_serie(tanque, 10, 1.3); invocar_serie(soldado_rapido, 40, 0.25).
+    +onda(9)  <- invocar_serie(tanque_pesado, 4, 3); invocar_serie(aviao, 30, 0.3).
+    +onda(10) <- invocar_serie(bombardeiro, 1, 1); invocar_serie(tanque, 10, 1.5);
+                 imprimir("BOMBARDEIRO! Prepare as defesas.").
+    // Depois da 10: ondas geradas pela fórmula, cada vez maiores.
+    +onda(N) : N > 10 <- invocar_serie(tanque_pesado, 2 * N - 18, 1.6); invocar_serie(aviao, 4 * N, 0.2);
+                         invocar_serie(blindado, 3 * N, 0.3).
+}

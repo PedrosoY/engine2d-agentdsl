@@ -12,6 +12,7 @@ Dois modos, para comparação experimental:
 from __future__ import annotations
 
 import ctypes
+import math
 import time
 
 import numpy as np
@@ -39,6 +40,7 @@ class Estatisticas:
         self.sprites_desenhados = 0
         self.ms_preparo = 0.0   # CPU: montar matrizes / buffers
         self.ms_envio = 0.0     # CPU: chamadas OpenGL
+        self.descartados = 0    # sprites eliminados pelo culling
 
     def zerar(self):
         self.__init__()
@@ -50,6 +52,7 @@ class Renderizador:
     def __init__(self, largura: int, altura: int, modo: str = "lote"):
         self.largura, self.altura = largura, altura
         self.modo = modo
+        self.culling = True   # descarta sprites fora da área visível da câmera
         self.cor_fundo = (0.08, 0.09, 0.12, 1.0)
         self.stats = Estatisticas()
 
@@ -107,16 +110,42 @@ class Renderizador:
         GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
     # ------------------------------------------------------------------
-    def desenhar(self, cena, camera) -> None:
-        """Desenha a cena inteira: primeiro o mundo (com câmera), depois a HUD."""
+    def desenhar(self, lista, camera, extras_tela=()) -> None:
+        """Desenha a lista inteira: primeiro o mundo (com câmera), depois a interface."""
         self.stats.zerar()
-        sprites = [s for s in cena.ordenados() if s.visivel]
+        sprites = [s for s in lista.ordenados() if s.visivel]
         mundo = [s for s in sprites if not s.espaco_tela]
-        tela = [s for s in sprites if s.espaco_tela]
+        tela = [s for s in sprites if s.espaco_tela] + list(extras_tela)
+        if self.culling and mundo:
+            mundo = self._recortar(mundo, camera)
         self._desenhar_lista(mundo, camera.view_proj())
         if tela:
             proj_tela = matematica.ortografica(0, self.largura, 0, self.altura)
             self._desenhar_lista(tela, proj_tela)
+
+    def _recortar(self, sprites, camera):
+        """View frustum culling 2D (Assarsson): em 2D o "frustum" é o retângulo visível.
+
+        Cada sprite é aproximado por um círculo envolvente (raio = meia diagonal
+        escalada); se o círculo não toca o retângulo da câmera, ele é descartado
+        antes de chegar à GPU. O teste é vetorizado no numpy.
+        """
+        n = len(sprites)
+        tr = [s.transformacao for s in sprites]
+        x = np.fromiter((t.x for t in tr), np.float32, n)
+        y = np.fromiter((t.y for t in tr), np.float32, n)
+        r = np.fromiter((0.5 * math.hypot(s.largura * t.sx, s.altura * t.sy) for s, t in zip(sprites, tr)),
+                        np.float32, n)
+        # meia largura/altura da área visível; com rotação da câmera usa o círculo que a envolve
+        hw = camera.largura / (2 * camera.zoom)
+        hh = camera.altura / (2 * camera.zoom)
+        if camera.rotacao % 360:
+            hw = hh = math.hypot(hw, hh)
+        visivel = (np.abs(x - camera.x) <= hw + r) & (np.abs(y - camera.y) <= hh + r)
+        self.stats.descartados = int(n - visivel.sum())
+        if visivel.all():
+            return sprites
+        return [s for s, v in zip(sprites, visivel) if v]
 
     def _desenhar_lista(self, sprites, view_proj) -> None:
         if not sprites:

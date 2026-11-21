@@ -1,11 +1,12 @@
-"""Testes funcionais da engine (sem GPU): transformações, camadas e seleção."""
+"""Testes funcionais da engine (sem GPU): transformações, camadas, seleção, GameObjects e física."""
 import math
 
 import numpy as np
 import pytest
 
 from conftest import TexturaFalsa
-from engine2d import Camera2D, Cena, Sprite, Transformacao
+from engine2d import (Camera2D, Cena, Colisor, Componente, CorpoRigido, GameObject, ListaRenderizacao,
+                      Sprite, Transformacao)
 from engine2d import matematica as M
 
 
@@ -53,7 +54,7 @@ def test_transformacao_cache_e_operacoes():
 
 
 def test_camadas_menores_desenhadas_primeiro_e_ordem_estavel():
-    cena = Cena()
+    cena = ListaRenderizacao()
     tex = TexturaFalsa()
     a = cena.adicionar(Sprite(tex, camada=2, nome="a"))
     b = cena.adicionar(Sprite(tex, camada=0, nome="b"))
@@ -70,7 +71,7 @@ def test_camadas_menores_desenhadas_primeiro_e_ordem_estavel():
 
 
 def test_agrupar_texturas_mantem_ordem_entre_camadas():
-    cena = Cena(agrupar_texturas=True)
+    cena = ListaRenderizacao(agrupar_texturas=True)
     t1, t2 = TexturaFalsa(id_=1), TexturaFalsa(id_=2)
     for i, (tex, cam) in enumerate([(t2, 1), (t1, 1), (t2, 0), (t1, 0)]):
         cena.adicionar(Sprite(tex, camada=cam, nome=str(i)))
@@ -80,7 +81,7 @@ def test_agrupar_texturas_mantem_ordem_entre_camadas():
 
 
 def test_selecao_respeita_rotacao_e_camada():
-    cena = Cena()
+    cena = ListaRenderizacao()
     tex = TexturaFalsa(100, 20)
     fundo = cena.adicionar(Sprite(tex, x=0, y=0, camada=0, nome="fundo"))
     frente = cena.adicionar(Sprite(tex, x=0, y=0, camada=3, rotacao=90, nome="frente"))
@@ -100,8 +101,120 @@ def test_camera_tela_para_mundo():
     assert np.allclose(cam.tela_para_mundo(500, 300), (150, 50))
 
 
+# ---------------------------------------------------------------- GameObject / Transform
+def test_hierarquia_compoe_poses():
+    pai = GameObject("pai", x=100, y=50, rotacao=90, escala=2)
+    filho = GameObject("filho", x=10, y=0, pai=pai)
+    x, y, r, sx, sy = filho.transform.mundo()
+    # (10, 0) escalado por 2 → (20, 0); girado 90° → (0, 20); somado ao pai → (100, 70)
+    assert np.allclose((x, y, r, sx), (100, 70, 90, 2), atol=1e-6)
+    filho.transform.posicao_mundo = (0, 0)          # definir no mundo ajusta o local
+    assert np.allclose(filho.transform.posicao_mundo, (0, 0), atol=1e-6)
+    with pytest.raises(ValueError):
+        pai.transform.definir_pai(filho.transform)    # ciclo
+
+
+def test_ciclo_de_vida_dos_componentes():
+    eventos = []
+
+    class Registro(Componente):
+        def iniciar(self):
+            eventos.append("iniciar")
+
+        def atualizar(self, dt):
+            eventos.append("atualizar")
+
+        def atualizar_tardio(self, dt):
+            eventos.append("tardio")
+
+        def ao_destruir(self):
+            eventos.append("destruir")
+
+    cena = Cena()
+    go = cena.criar("x", componentes=[Registro()])
+    cena.atualizar(0.1)
+    cena.atualizar(0.1)
+    go.destruir()
+    assert go in cena.objetos            # Destroy acontece no fim do quadro
+    cena.atualizar(0.1)
+    assert eventos == ["iniciar", "atualizar", "tardio", "atualizar", "tardio", "atualizar", "tardio", "destruir"]
+    assert go not in cena.objetos and go.destruido
+
+
+def test_destruir_pai_destroi_filhos_e_encontrar():
+    cena = Cena()
+    pai = cena.criar("pai")
+    filho = cena.criar("filho", pai=pai)
+    assert cena.encontrar("filho") is filho
+    pai.destruir()
+    cena.atualizar(0)
+    assert filho.destruido and cena.encontrar("filho") is None
+
+
+def test_fisica_separa_corpos_e_dispara_eventos():
+    entradas = []
+
+    class Ouvinte(Componente):
+        def ao_entrar_colisao(self, outro):
+            entradas.append(outro.gameobject.nome)
+
+    cena = Cena()
+    a = cena.criar("a", 0, 0, componentes=[CorpoRigido(), Colisor(raio=10), Ouvinte()])
+    cena.criar("parede", 12, 0, componentes=[Colisor(forma="caixa", largura=10, altura=40)])
+    cena.criar("sensor", -5, 0, componentes=[Colisor(raio=4, gatilho=True)])
+    cena.atualizar(1 / 60)
+    assert sorted(entradas) == ["parede", "sensor"]
+    # círculo (raio 10) invade 3 px a parede (borda em x=7); a parede é estática,
+    # então só o corpo dinâmico é empurrado: o centro vai para x = -3. O gatilho não empurra.
+    assert abs(a.transform.x - (-3)) < 1e-6
+    entradas.clear()
+    cena.atualizar(1 / 60)
+    assert entradas == []                 # "entrar" só no primeiro contato
+
+
+def test_camadas_de_colisao_e_consultas():
+    cena = Cena()
+    cena.fisica.ignorar("tiro", "tiro")
+    for k in range(3):
+        cena.criar(f"t{k}", 0, 0, componentes=[Colisor(raio=5, camada_fisica="tiro", gatilho=True)])
+    cena.criar("alvo", 100, 0, componentes=[Colisor(raio=5, camada_fisica="inimigo")])
+    cena.atualizar(0)
+    assert cena.fisica.contatos_quadro == 0
+    assert [c.gameobject.nome for c in cena.fisica.consultar_circulo(95, 0, 2, "inimigo")] == ["alvo"]
+    assert cena.fisica.mais_proximo(0, 0, "inimigo").gameobject.nome == "alvo"
+
+
+def test_cena_json_e_prefab():
+    cena = Cena()
+    pai = cena.criar("pai", 5, 6, componentes=[CorpoRigido(vx=3)])
+    cena.criar("filho", 1, 2, pai=pai, componentes=[Colisor(raio=7, gatilho=True)])
+    dados = cena.para_dict()
+    nova = Cena()
+    nova.carregar_dict(dados)
+    p2 = nova.encontrar("pai")
+    assert p2.obter(CorpoRigido).vx == 3 and p2.transform.x == 5
+    f2 = nova.encontrar("filho")
+    assert f2.pai is p2 and f2.obter(Colisor).raio == 7 and f2.obter(Colisor).gatilho
+    nova.registrar_prefab("bala", {"nome": "bala", "componentes": [{"tipo": "CorpoRigido", "campos": {"vx": 1}}]})
+    b = nova.instanciar("bala", 10, 20, CorpoRigido__vx=9)
+    assert (b.transform.x, b.transform.y, b.obter(CorpoRigido).vx) == (10, 20, 9)
+
+
+def test_campos_invalidos_sao_recusados():
+    with pytest.raises(TypeError):
+        Colisor(raiio=3)
+
+
 @pytest.mark.gpu
 def test_demo_roda_alguns_quadros():
     pytest.importorskip("OpenGL")
     import demo_engine
     demo_engine.main(max_quadros=5)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("jogo", ["arena", "torres"])
+def test_jogos_rodam_alguns_quadros(jogo):
+    pytest.importorskip("OpenGL")
+    import jogar
+    jogar.main([jogo], max_quadros=30)

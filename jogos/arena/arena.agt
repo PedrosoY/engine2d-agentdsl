@@ -1,0 +1,137 @@
+// =====================================================================
+//  ARENA DOS SOBREVIVENTES — comportamento escrito em AgentDSL
+//
+//  O jogo (arena.py) só move os corpos, detecta colisões e gera as
+//  percepções abaixo. Quem decide O QUE fazer são os agentes deste arquivo.
+//
+//  Percepções do jogo:
+//    atingido(D)        levou D de dano neste quadro (pulso)
+//    tocando_jogador    encostado no jogador
+//    jogador_perto      jogador a menos de alcance(R) (se o agente tiver alcance)
+//    segundo(S) / minuto(M)   relógio da partida (só o diretor recebe)
+//
+//  Ações do jogo: ferir_jogador(D), soltar_xp(N), atirar_no_jogador(D, V),
+//    atirar_mais_proximo(D, V, Qtd, Perfura), serras(Qtd, D, Raio, Vel),
+//    onda_de_choque(D, Raio), vencer
+//  Ações da engine: perseguir, parar, piscar, cor, morrer, temporizador,
+//    invocar, invocar_aqui, imprimir ...
+// =====================================================================
+
+
+// ------------------------------ INIMIGOS ------------------------------
+// "modelo" = tipo de agente; o jogo cria uma instância para cada inimigo.
+
+modelo zumbi {
+    nasceu.
+    vida(10).
+    dano(8).
+    xp(1).
+
+    +nasceu <- perseguir(jogador, 75).
+
+    // Vida controlada pela DSL: cada golpe gera o evento +atingido(D).
+    +atingido(D) : vida(V) & V > D  <- -+vida(V - D); piscar.
+    +atingido(_D) : xp(X)           <- soltar_xp(X); morrer.
+
+    // Mordida repetida enquanto estiver encostado no jogador.
+    +tocando_jogador : dano(X) <- ferir_jogador(X); temporizador(0.8, morder).
+    +morder : tocando_jogador & dano(X) <- -morder; ferir_jogador(X); temporizador(0.8, morder).
+    +morder <- -morder.
+}
+
+// Herança: tudo do zumbi, com outros números.
+modelo corredor : zumbi {
+    vida(7).
+    dano(6).
+    +nasceu <- perseguir(jogador, 140).
+}
+
+modelo brutamontes : zumbi {
+    vida(70).
+    dano(18).
+    xp(6).
+    +nasceu <- perseguir(jogador, 48).
+}
+
+// Mantém distância e atira quando o jogador entra no alcance.
+modelo atirador : zumbi {
+    vida(18).
+    dano(6).
+    xp(3).
+    alcance(320).
+
+    +nasceu <- perseguir(jogador, 85).
+    +jogador_perto <- parar; +mirando; temporizador(0.9, disparo).
+    -jogador_perto <- -mirando; perseguir(jogador, 85).
+    +disparo : mirando <- -disparo; atirar_no_jogador(9, 280); temporizador(1.7, disparo).
+    +disparo <- -disparo.
+}
+
+// Chefe com duas fases e reforços periódicos.
+modelo chefe : zumbi {
+    vida(1400).
+    dano(30).
+    xp(80).
+    fase(1).
+
+    +nasceu <- perseguir(jogador, 55); temporizador(5, reforcos);
+               imprimir("O CHEFE CHEGOU!").
+    +reforcos : fase(F) <- -reforcos; invocar_aqui(corredor, 2 * F + 1); temporizador(5, reforcos).
+
+    +atingido(D) : vida(V) & V > D & V - D < 700 & fase(1)
+        <- -+fase(2); -+vida(V - D); perseguir(jogador, 90); cor(1, 0.45, 0.45);
+           imprimir("O chefe ficou FURIOSO!").
+    +atingido(D) : vida(V) & V <= D <- soltar_xp(80); vencer; morrer.
+}
+
+
+// ------------------------------ ARMAS ---------------------------------
+// Cada arma é um agente. O jogo sobe o nível trocando nivel(N) por nivel(N+1)
+// quando o jogador escolhe a melhoria — o evento +nivel(N) faz o resto.
+
+agente pistola {
+    nivel(1).
+    +nivel(1) <- temporizador(0.4, pronta).
+    +pronta : nivel(N) <- -pronta;
+        atirar_mais_proximo(8 + 3 * N, 600, 1 + N / 2, 1 + N / 3);
+        temporizador(0.75 - 0.1 * N, pronta).
+}
+
+agente serras {
+    nivel(0).
+    +nivel(N) : N > 0 <- serras(1 + N / 2, 7 + 3 * N, 85 + 10 * N, 160 + 30 * N).
+}
+
+agente bomba {
+    nivel(0).
+    +nivel(1) <- temporizador(0.5, pronta).
+    +pronta : nivel(N) <- -pronta; onda_de_choque(14 + 9 * N, 140 + 25 * N);
+                          temporizador(3.6 - 0.45 * N, pronta).
+}
+
+
+// ------------------------------ DIRETORES -----------------------------
+// Recebem segundo(S) e minuto(M). Em cada evento vale o PRIMEIRO plano
+// aplicável, então a ordem dos planos define as fases da partida.
+
+// A horda: zumbis e corredores todo segundo, cada vez mais.
+agente diretor {
+    +segundo(S) : S < 30  <- invocar(zumbi, 1).
+    +segundo(S) : S < 80  <- invocar(zumbi, 2).
+    +segundo(S) : S < 150 <- invocar(zumbi, 2); invocar(corredor, 1).
+    +segundo(S) : S < 240 <- invocar(zumbi, 3); invocar(corredor, 1).
+    +segundo(_S)          <- invocar(zumbi, 3); invocar(corredor, 2).
+
+    +minuto(1) <- imprimir("Os corredores estão chegando...").
+    +minuto(4) <- invocar(chefe, 1).
+    +minuto(6) <- vencer.
+}
+
+// A elite: aparece de tempos em tempos (operador % = resto da divisão).
+agente elite {
+    +segundo(S) : S >= 60 & S % 20 == 0  <- invocar(corredor, 8); imprimir("Bando de corredores!").
+    +segundo(S) : S >= 90 & S % 6 == 0   <- invocar(atirador, 1).
+    +segundo(S) : S >= 120 & S % 10 == 0 <- invocar(brutamontes, 1 + S / 120).
+    +minuto(2) <- imprimir("Atiradores na área!").
+    +minuto(3) <- imprimir("Brutamontes à vista.").
+}

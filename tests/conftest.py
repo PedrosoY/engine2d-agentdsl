@@ -1,8 +1,10 @@
+import os
 import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
+os.environ["ENGINE2D_LEVANTAR_ERROS"] = "1"   # nos testes, erro tem que falhar o teste
 
 
 class TexturaFalsa:

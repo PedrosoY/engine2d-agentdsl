@@ -176,6 +176,7 @@ class Agente:
     pos: Posicao | None = None
     pai: str | None = None     # herança: "agente guarda2 : guarda1 ..."
     pai_pos: Posicao | None = None
+    eh_modelo: bool = False    # "modelo": não é criado no início; o jogo cria instâncias
 
 
 @dataclass
@@ -189,7 +190,7 @@ def imprimir_arvore(no, nivel: int = 0) -> str:
     if isinstance(no, Programa):
         return "Programa\n" + "\n".join(imprimir_arvore(a, nivel + 1) for a in no.agentes)
     if isinstance(no, Agente):
-        linhas = [f"{pad}Agente {no.nome}" + (f" : {no.pai}" if no.pai else "")]
+        linhas = [f"{pad}{'Modelo' if no.eh_modelo else 'Agente'} {no.nome}" + (f" : {no.pai}" if no.pai else "")]
         if no.sprite:
             s = no.sprite
             linhas.append(f"{pad}  Sprite \"{s.imagem}\" em ({s.x}, {s.y}) camada {s.camada}")

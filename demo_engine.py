@@ -1,129 +1,110 @@
-"""Demo interativa da engine 2D (parte de Computação Gráfica).
+"""Demo da engine (Computação Gráfica): cena montada com GameObjects e componentes.
 
-Controles
-  WASD / setas ..... mover câmera          roda do mouse ... zoom
-  clique esquerdo .. selecionar e arrastar um sprite
-  Q / E ............ rotacionar selecionado  Z / X ......... escala - / +
-  PgUp / PgDn ...... camada do selecionado + / -
-  + / - ............ adicionar / remover 200 sprites animados
-  M ................ alternar modo de renderização (individual / lote)
-  ESPAÇO ........... pausar animação          ESC ........... sair
+  WASD move o personagem · a câmera segue · F1 abre o editor
+  No editor: clique para selecionar, arraste para mover, edite valores no inspector,
+  F5 play/pause, Ctrl+S salva a cena em JSON. M alterna o modo de renderização.
 """
 import math
 import random
 import sys
 from pathlib import Path
 
-import pygame
-
 RAIZ = Path(__file__).parent
 sys.path.insert(0, str(RAIZ))
 
-import gerar_assets  # noqa: E402
-from engine2d import Motor, TextoHUD  # noqa: E402
+from engine2d import (CameraSegue, Cena, Colisor, Componente, CorpoRigido,  # noqa: E402
+                      SpriteRenderer)
+
+SH = "kenney_shooter/PNG/"
+
+
+class ControleJogador(Componente):
+    CAMPOS = {"velocidade": "float"}
+    velocidade = 260.0
+
+    def iniciar(self):
+        self.rb = self.obter(CorpoRigido)
+
+    def atualizar(self, dt):
+        ent = self.motor.entrada
+        dx, dy = ent.direcao_wasd()
+        self.rb.vx, self.rb.vy = dx * self.velocidade, dy * self.velocidade
+        mx, my = ent.mouse_mundo
+        self.transform.olhar_para(mx, my)
+        if ent.tecla_baixou("m"):
+            r = self.motor.renderizador
+            r.modo = "individual" if r.modo == "lote" else "lote"
+
+
+class Perseguidor(Componente):
+    CAMPOS = {"velocidade": "float", "alvo": "str"}
+    velocidade = 90.0
+    alvo = "Jogador"
+
+    def iniciar(self):
+        self.rb = self.obter(CorpoRigido)
+
+    def atualizar(self, dt):
+        alvo = self.cena.encontrar(self.alvo)
+        if alvo is None:
+            return
+        ax, ay = alvo.transform.posicao_mundo
+        x, y = self.transform.posicao_mundo
+        d = math.hypot(ax - x, ay - y) or 1
+        self.rb.vx, self.rb.vy = (ax - x) / d * self.velocidade, (ay - y) / d * self.velocidade
+        self.transform.olhar_para(ax, ay)
+
+
+class Orbitar(Componente):
+    """Gira o objeto em torno do pai (mostra a hierarquia de transformações)."""
+    CAMPOS = {"graus_por_s": "float"}
+    graus_por_s = 120.0
+
+    def atualizar(self, dt):
+        self.transform.rotacao += self.graus_por_s * dt
+
+
+class Legenda(Componente):
+    def desenhar_ui(self, ui):
+        ui.retangulo((10, 10, 360, 70), bloquear=False)
+        ui.texto(20, 16, "Demo da Engine2D", 18, negrito=True)
+        ui.texto(20, 40, "WASD move · mouse mira · F1 editor · M modo render", 14)
+        ui.texto(20, 58, f"FPS {self.motor.fps_medio:.0f} · modo {self.motor.renderizador.modo}", 14)
+
+
+def montar_cena() -> Cena:
+    cena = Cena("Demo")
+    random.seed(3)
+    chao = cena.criar("Chão")       # agrupa os tiles (aparece recolhido na hierarquia)
+    for i in range(-10, 30):
+        for j in range(-8, 20):
+            cena.criar(f"tile {i},{j}", i * 64, j * 64, pai=chao, componentes=[
+                SpriteRenderer(imagem=SH + "Tiles/tile_0" + ("1" if (i * 7 + j * 3) % 5 else "2") + ".png",
+                               camada=0)])
+    jog = cena.criar("Jogador", 600, 400, tag="jogador", componentes=[
+        SpriteRenderer(imagem=SH + "Survivor 1/survivor1_gun.png", camada=3),
+        CorpoRigido(massa=3), Colisor(raio=20, camada_fisica="jogador"), ControleJogador(), CameraSegue()])
+    # Filho que orbita o jogador: a posição dele é relativa ao pai.
+    pivo = cena.criar("Pivô da órbita", 0, 0, pai=jog, componentes=[Orbitar()])
+    cena.criar("Satélite", 70, 0, pai=pivo, escala=0.6, componentes=[
+        SpriteRenderer(imagem="kenney_td/PNG/Default size/towerDefense_tile134.png", camada=4)])
+    for k in range(25):
+        cena.criar(f"Caixa {k}", random.uniform(-400, 1700), random.uniform(-300, 1100), componentes=[
+            SpriteRenderer(imagem=SH + "Tiles/tile_129.png", camada=2), Colisor(forma="caixa", largura=60, altura=60)])
+    tipos = ["Zombie 1/zoimbie1_hold.png", "Robot 1/robot1_hold.png", "Man Brown/manBrown_hold.png"]
+    for k in range(40):
+        cena.criar(f"Inimigo {k}", random.uniform(-400, 1700), random.uniform(-300, 1100), tag="inimigo",
+                   componentes=[SpriteRenderer(imagem=SH + random.choice(tipos), camada=2), CorpoRigido(),
+                                Colisor(raio=18, camada_fisica="inimigo"),
+                                Perseguidor(velocidade=random.uniform(50, 110))])
+    cena.criar("Legenda", componentes=[Legenda()])
+    return cena
 
 
 def main(max_quadros=None, captura=None):
-    if not (RAIZ / "assets" / "chao.png").exists():
-        gerar_assets.gerar()
+    from engine2d import Motor
     motor = Motor(1280, 720, "Engine2D — demo", pasta_assets=RAIZ / "assets")
-    cena = motor.cena
-
-    # Camada 0: chão (fundo); 1-3: objetos; 5: nuvens semitransparentes (primeiro plano)
-    for i in range(-2, 7):
-        for j in range(-2, 5):
-            motor.criar_sprite("chao.png", x=i * 256, y=j * 256, camada=0, nome="chao")
-    texturas = ["bola.png", "estrela.png", "caixa.png", "guarda.png", "fujao.png"]
-    animados = []
-
-    def adicionar(qtd):
-        for _ in range(qtd):
-            s = motor.criar_sprite(random.choice(texturas), x=random.uniform(0, 1280),
-                                   y=random.uniform(0, 720), camada=random.randint(1, 3),
-                                   rotacao=random.uniform(0, 360), sx=random.uniform(0.4, 1.0))
-            s.transformacao.sy = s.transformacao.sx
-            s.dados["vel"] = (random.uniform(-60, 60), random.uniform(-60, 60), random.uniform(-90, 90))
-            animados.append(s)
-
-    adicionar(200)
-    # Três sprites fixos sobrepostos para mostrar a ordem das camadas
-    a = motor.criar_sprite("caixa.png", x=640, y=360, camada=4, sx=2, sy=2, nome="caixa_L4")
-    motor.criar_sprite("jogador.png", x=680, y=380, camada=6, sx=2, sy=2, nome="jogador_L6")
-    motor.criar_sprite("estrela.png", x=610, y=400, camada=2, sx=2, sy=2, nome="estrela_L2")
-    for k in range(6):
-        motor.criar_sprite("nuvem.png", x=k * 230, y=600 + 40 * math.sin(k), camada=5, nome="nuvem")
-
-    hud = TextoHUD(motor)
-    estado = {"sel": a, "arrastando": False, "pausado": False}
-
-    def ao_evento(m, ev):
-        if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
-            wx, wy = m.camera.tela_para_mundo(*ev.pos)
-            s = cena.sprite_em(wx, wy)
-            if s is not None and s.nome != "chao":
-                estado["sel"] = s
-                estado["arrastando"] = True
-        elif ev.type == pygame.MOUSEBUTTONUP and ev.button == 1:
-            estado["arrastando"] = False
-        elif ev.type == pygame.MOUSEMOTION and estado["arrastando"]:
-            estado["sel"].x, estado["sel"].y = m.camera.tela_para_mundo(*ev.pos)
-        elif ev.type == pygame.MOUSEWHEEL:
-            m.camera.zoom = max(0.1, min(8.0, m.camera.zoom * (1.1 ** ev.y)))
-        elif ev.type == pygame.KEYDOWN:
-            sel = estado["sel"]
-            if ev.key == pygame.K_m:
-                r = m.renderizador
-                r.modo = "individual" if r.modo == "lote" else "lote"
-            elif ev.key == pygame.K_SPACE:
-                estado["pausado"] = not estado["pausado"]
-            elif ev.key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS):
-                adicionar(200)
-            elif ev.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
-                for _ in range(min(200, len(animados))):
-                    cena.remover(animados.pop())
-            elif ev.key == pygame.K_PAGEUP and sel:
-                sel.camada += 1
-            elif ev.key == pygame.K_PAGEDOWN and sel:
-                sel.camada -= 1
-
-    def atualizar(m, dt):
-        teclas = pygame.key.get_pressed()
-        v = 400 * dt / m.camera.zoom
-        m.camera.x += v * ((teclas[pygame.K_d] or teclas[pygame.K_RIGHT]) - (teclas[pygame.K_a] or teclas[pygame.K_LEFT]))
-        m.camera.y += v * ((teclas[pygame.K_w] or teclas[pygame.K_UP]) - (teclas[pygame.K_s] or teclas[pygame.K_DOWN]))
-        sel = estado["sel"]
-        if sel:
-            if teclas[pygame.K_q]:
-                sel.transformacao.rotacionar(120 * dt)
-            if teclas[pygame.K_e]:
-                sel.transformacao.rotacionar(-120 * dt)
-            if teclas[pygame.K_z]:
-                sel.transformacao.escalar(1 - 1.5 * dt)
-            if teclas[pygame.K_x]:
-                sel.transformacao.escalar(1 + 1.5 * dt)
-        if not estado["pausado"]:
-            for s in animados:
-                vx, vy, vr = s.dados["vel"]
-                t = s.transformacao
-                t.transladar(vx * dt, vy * dt)
-                t.rotacionar(vr * dt)
-                if not 0 <= t.x <= 1280:
-                    s.dados["vel"] = (-vx, vy, vr)
-                if not 0 <= t.y <= 720:
-                    s.dados["vel"] = (vx, -vy, vr)
-        if m.quadro % 15 == 0:
-            st = m.renderizador.stats
-            hud.definir(
-                f"FPS {m.fps_medio:6.1f}  |  {m.ms_quadro_medio:5.2f} ms/quadro\n"
-                f"modo [M]: {m.renderizador.modo}   sprites: {len(cena)}   draw calls: {st.chamadas_desenho}\n"
-                f"selecionado: {sel.nome if sel else '-'}  camada={sel.camada if sel else '-'}\n"
-                f"  {sel.transformacao if sel else ''}\n"
-                f"GPU: {m.info_gl['renderer'][:48]}"
-            )
-
-    motor.executar(atualizar, ao_evento, max_quadros=max_quadros)
-    if captura:
-        motor.capturar_tela(captura)
+    motor.executar(montar_cena(), max_quadros=max_quadros, captura=captura)
     motor.encerrar()
 
 

@@ -6,6 +6,9 @@ Escopos (aninhados):
     plano   → variáveis (ligadas no evento ou no contexto)
 
 Tipos: num, atomo, texto, ? (desconhecido, ex.: variável cujo tipo não se infere).
+Tipos especiais de parâmetro de ação (são átomos com verificação extra):
+    modelo → precisa ser um `modelo` declarado no programa (ex.: invocar(zumbi, 3));
+    crenca → nome de crença que a ação vai adicionar (ex.: temporizador(1.5, pronto)).
 """
 from __future__ import annotations
 
@@ -15,6 +18,7 @@ from . import ast as A
 from .erros import Diagnostico, Posicao
 
 NUM, ATOMO, TEXTO, DESCONHECIDO = "num", "atomo", "texto", "?"
+MODELO, CRENCA = "modelo", "crenca"
 
 
 @dataclass(frozen=True)
@@ -25,7 +29,7 @@ class Assinatura:
     variadica: bool = False
 
 
-# Ações que a ponte com a engine 2D sabe executar (ver ponte_engine.py).
+# Ações que todo agente ligado a um GameObject sabe executar (ver componente.py).
 ACOES_ENGINE: dict[str, Assinatura] = {
     "mover": Assinatura((NUM, NUM), "desloca o sprite (dx, dy) uma vez"),
     "posicionar": Assinatura((NUM, NUM), "coloca o sprite em (x, y)"),
@@ -42,6 +46,13 @@ ACOES_ENGINE: dict[str, Assinatura] = {
     "sumir": Assinatura((), "esconde o sprite"),
     "aparecer": Assinatura((), "mostra o sprite"),
     "imprimir": Assinatura((), "escreve no log", variadica=True),
+    "trocar_imagem": Assinatura((TEXTO,), "troca a imagem do sprite"),
+    "temporizador": Assinatura((NUM, CRENCA), "após N segundos adiciona a crença"),
+    "invocar": Assinatura((MODELO, NUM), "cria N instâncias do modelo (onde o jogo decidir)"),
+    "invocar_aqui": Assinatura((MODELO, NUM), "cria N instâncias do modelo na posição do agente"),
+    "invocar_serie": Assinatura((MODELO, NUM, NUM), "cria N instâncias, uma a cada T segundos"),
+    "morrer": Assinatura((), "destrói o GameObject do agente"),
+    "piscar": Assinatura((), "pisca o sprite (feedback de dano)"),
 }
 
 
@@ -144,6 +155,7 @@ class AnalisadorSemantico:
             self.tabela.agentes[ag.nome] = SimboloAgente(ag.nome, ag.pos)
             nomes_alvo.add(ag.nome)
         self.nomes_agentes = nomes_alvo
+        self.nomes_modelos = {ag.nome for ag in prog.agentes if getattr(ag, "eh_modelo", False)}
         for ag in prog.agentes:
             if self.tabela.agentes.get(ag.nome) and self.tabela.agentes[ag.nome].pos is ag.pos:
                 self._agente(ag, self.tabela.agentes[ag.nome])
@@ -176,6 +188,11 @@ class AnalisadorSemantico:
             for a in p.acoes:
                 if isinstance(a, A.AcaoCrenca) and a.op in ("+", "-+"):
                     produzidas.add((a.literal.nome, a.literal.aridade))
+                elif isinstance(a, A.AcaoExterna) and a.nome in self.acoes:
+                    # ex.: temporizador(1.5, pronto) adiciona a crença "pronto" mais tarde
+                    for arg, tipo in zip(a.args, self.acoes[a.nome].tipos):
+                        if tipo == CRENCA and isinstance(arg, A.Atomo):
+                            produzidas.add((arg.nome, 0))
         # 3) planos
         for p in ag.planos:
             self._plano(p, sim, produzidas)
@@ -280,6 +297,20 @@ class AnalisadorSemantico:
             return
         for i, (arg, esperado) in enumerate(zip(a.args, sig.tipos)):
             tp = self._tipo_expr(arg)
+            if esperado in (MODELO, CRENCA):
+                if not isinstance(arg, A.Atomo):
+                    self._erro(f"argumento {i + 1} de '{a.nome}' deve ser um nome de "
+                               f"{'modelo' if esperado == MODELO else 'crença'} escrito diretamente, "
+                               f"mas '{arg}' é {tp}", arg.pos or a.pos)
+                elif esperado == MODELO and arg.nome not in self.nomes_modelos:
+                    if arg.nome in self.nomes_agentes:
+                        self._erro(f"'{arg.nome}' é um agente único, não um modelo: declare-o com "
+                                   f"'modelo {arg.nome} {{ ... }}' para poder invocá-lo", arg.pos)
+                    else:
+                        sug = self._parecida(arg.nome, self.nomes_modelos)
+                        self._erro(f"modelo '{arg.nome}' não foi declarado"
+                                   + (f" (quis dizer '{sug}'?)" if sug else ""), arg.pos)
+                continue
             if esperado == ATOMO and isinstance(arg, A.Atomo) and arg.nome not in self.nomes_agentes \
                     and arg.nome not in getattr(self, "alvos_extras", set()):
                 self._aviso(f"alvo '{arg.nome}' em '{a.nome}' não é um agente declarado", arg.pos)
@@ -338,7 +369,7 @@ class AnalisadorSemantico:
                     info = self.tabela.buscar_var(lado.nome)
                     if info:
                         info["tipo"] = NUM   # inferência: usada em conta => número
-            if no.op == "/" and isinstance(no.dir, A.Numero) and no.dir.valor == 0:
+            if no.op in ("/", "%") and isinstance(no.dir, A.Numero) and no.dir.valor == 0:
                 self._erro("divisão por zero", no.pos)
             return NUM
         return DESCONHECIDO

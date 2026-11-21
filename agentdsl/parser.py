@@ -15,7 +15,7 @@ OPS_RELACIONAIS = {"MENOR": "<", "MENOR_IGUAL": "<=", "MAIOR": ">", "MAIOR_IGUAL
                    "IGUAL": "==", "DIFERENTE": "!="}
 
 NOMES_TOKENS = {
-    "AGENTE": "'agente'", "SPRITE": "'sprite'", "EM": "'em'", "CAMADA": "'camada'",
+    "AGENTE": "'agente'", "MODELO": "'modelo'", "SPRITE": "'sprite'", "EM": "'em'", "CAMADA": "'camada'",
     "ABRE_CHAVE": "'{'", "FECHA_CHAVE": "'}'", "ABRE_PAR": "'('", "FECHA_PAR": "')'",
     "VIRGULA": "','", "PONTO": "'.'", "PONTO_VIRGULA": "';'", "DOIS_PONTOS": "':'",
     "SETA": "'<-'", "IDENT": "identificador", "VAR": "variável", "NUM": "número",
@@ -76,13 +76,16 @@ class Parser:
                 prog.agentes.append(self.agente())
             except _Panico:
                 # Pula até o próximo 'agente' para continuar a análise.
-                while not self._ver("FIM", "AGENTE"):
+                while not self._ver("FIM", "AGENTE", "MODELO"):
                     self._consumir()
         return prog
 
-    # agente = "agente" IDENT [":" IDENT] [decl_sprite] "{" { crenca | plano } "}"
+    # agente = ("agente" | "modelo") IDENT [":" IDENT] [decl_sprite] "{" { crenca | plano } "}"
     def agente(self) -> A.Agente:
-        ini = self._esperar("AGENTE", "no início da definição")
+        if self._ver("MODELO"):
+            ini = self._consumir()
+        else:
+            ini = self._esperar("AGENTE", "no início da definição ('agente' ou 'modelo')")
         nome = self._esperar("IDENT", "(nome do agente)").lexema
         pai = pai_pos = None
         if self._ver("DOIS_PONTOS"):
@@ -91,8 +94,8 @@ class Parser:
             pai, pai_pos = t.lexema, t.pos
         sprite = self.decl_sprite() if self._ver("SPRITE") else None
         self._esperar("ABRE_CHAVE", f"após o cabeçalho do agente '{nome}'")
-        ag = A.Agente(nome, sprite, pos=ini.pos, pai=pai, pai_pos=pai_pos)
-        while not self._ver("FECHA_CHAVE", "FIM", "AGENTE"):
+        ag = A.Agente(nome, sprite, pos=ini.pos, pai=pai, pai_pos=pai_pos, eh_modelo=ini.tipo == "MODELO")
+        while not self._ver("FECHA_CHAVE", "FIM", "AGENTE", "MODELO"):
             try:
                 if self._ver("MAIS", "MENOS"):
                     ag.planos.append(self.plano())
@@ -102,7 +105,7 @@ class Parser:
                     self._falhar(f"esperava uma crença ou um plano (+evento / -evento), "
                                  f"encontrou {self._descrever(self.atual)}")
             except _Panico:
-                self._sincronizar(("PONTO", "FECHA_CHAVE", "AGENTE"))
+                self._sincronizar(("PONTO", "FECHA_CHAVE", "AGENTE", "MODELO"))
         self._esperar("FECHA_CHAVE", f"para fechar o agente '{nome}'")
         return ag
 
@@ -230,10 +233,10 @@ class Parser:
             e = A.BinOp(op.lexema, e, self.termo(), op.pos)
         return e
 
-    # termo = fator { ("*" | "/") fator }
+    # termo = fator { ("*" | "/" | "%") fator }
     def termo(self):
         e = self.fator()
-        while self._ver("VEZES", "DIVIDIDO"):
+        while self._ver("VEZES", "DIVIDIDO", "RESTO"):
             op = self._consumir()
             e = A.BinOp(op.lexema, e, self.fator(), op.pos)
         return e

@@ -72,6 +72,8 @@ def avaliar(no, subst: dict):
             return a * b
         if b == 0:
             raise ErroExecucao("divisão por zero")
+        if no.op == "%":
+            return a % b
         return a / b
     raise ErroExecucao(f"expressão desconhecida {no!r}")
 
@@ -106,17 +108,24 @@ COMPARADORES = {
 # Agente em tempo de execução
 # ---------------------------------------------------------------------------
 class Agente:
-    def __init__(self, decl: A.Agente, sistema: "SistemaAgentes"):
-        self.nome = decl.nome
+    def __init__(self, decl: A.Agente, sistema: "SistemaAgentes", nome: str | None = None):
+        self.nome = nome or decl.nome
+        self.modelo = decl.nome
         self.decl = decl
         self.sistema = sistema
         self.crencas: set[tuple] = set()
         self.fila: deque = deque()
-        self.sprite = None            # preenchido pela ponte com a engine
-        self.planos: dict[tuple, list[A.Plano]] = {}
-        for p in decl.planos:
-            chave = (p.evento.op, p.evento.literal.nome, p.evento.literal.aridade)
-            self.planos.setdefault(chave, []).append(p)
+        self.sprite = None            # preenchido pela ponte com a engine (versão antiga)
+        self.corpo = None             # ComportamentoAgente que liga o agente a um GameObject
+        self.vivo = True
+        self.log: deque = deque(maxlen=8)
+        self.planos = sistema._planos_por_modelo.get(decl.nome)
+        if self.planos is None:   # índice evento → planos, compartilhado entre instâncias
+            self.planos = {}
+            for p in decl.planos:
+                chave = (p.evento.op, p.evento.literal.nome, p.evento.literal.aridade)
+                self.planos.setdefault(chave, []).append(p)
+            sistema._planos_por_modelo[decl.nome] = self.planos
 
     # --- base de crenças: cada alteração produz um evento (eq. 7) ----------
     def adicionar(self, nome: str, args: tuple = ()) -> bool:
@@ -185,7 +194,10 @@ class Agente:
             if s_ctx is None:
                 continue
             self.sistema.registrar(self, f"{op}{formatar_crenca((nome, args))} -> plano linha {plano.pos.linha}")
-            self._executar(plano, s_ctx)
+            try:
+                self._executar(plano, s_ctx)
+            except ErroExecucao as e:   # erro em tempo de execução não derruba o jogo
+                self.sistema.registrar(self, f"ERRO (linha {plano.pos.linha}): {e}", tipo="erro")
             return True
         return True
 
@@ -252,7 +264,32 @@ class SistemaAgentes:
             raise ErroCompilacao(erros)
         self.programa = prog
         self.tabela = sem.tabela
-        self.agentes: dict[str, Agente] = {d.nome: Agente(d, self) for d in prog.agentes}
+        self._planos_por_modelo: dict[str, dict] = {}
+        self.modelos: dict[str, A.Agente] = {d.nome: d for d in prog.agentes if d.eh_modelo}
+        # "agente" = instância única criada no início; "modelo" = criado sob demanda.
+        self.agentes: dict[str, Agente] = {d.nome: Agente(d, self) for d in prog.agentes if not d.eh_modelo}
+        self.instancias: list[Agente] = []
+        self._contador: dict[str, int] = {}
+
+    def criar_instancia(self, modelo: str, nome: str | None = None) -> Agente:
+        """Cria um agente a partir de um ``modelo``; as crenças iniciais geram eventos +b."""
+        decl = self.modelos.get(modelo)
+        if decl is None:
+            raise KeyError(f"modelo '{modelo}' não existe no programa")
+        n = self._contador[modelo] = self._contador.get(modelo, 0) + 1
+        ag = Agente(decl, self, nome or f"{modelo}#{n}")
+        for c in decl.crencas:
+            ag.adicionar(c.nome, tuple(avaliar(a, {}) for a in c.args))
+        self.instancias.append(ag)
+        return ag
+
+    def remover_instancia(self, ag: Agente) -> None:
+        ag.vivo = False
+        if ag in self.instancias:
+            self.instancias.remove(ag)
+
+    def todos(self) -> list[Agente]:
+        return list(self.agentes.values()) + self.instancias
 
     def iniciar(self) -> None:
         """Carrega as crenças iniciais. Como no Jason, cada uma gera um evento +b."""
@@ -263,7 +300,9 @@ class SistemaAgentes:
     def passo(self) -> int:
         """Um ciclo para todos os agentes; processa até ``max_eventos`` eventos de cada."""
         total = 0
-        for ag in self.agentes.values():
+        for ag in self.todos():
+            if not ag.vivo:
+                continue
             n = 0
             while n < self.max_eventos and ag.passo():
                 n += 1
@@ -282,6 +321,7 @@ class SistemaAgentes:
     def registrar(self, agente, texto: str, tipo: str = "evento") -> None:
         linha = f"[{agente.nome}] {texto}"
         self.log.append(linha)
+        agente.log.append(texto)
         if self.ao_registrar:
             self.ao_registrar(linha, tipo)
 

@@ -6,7 +6,7 @@
     python -m agentdsl verificar  arquivo.agt   # léxico + sintático + semântico
     python -m agentdsl executar   arquivo.agt [--passos N] [--perceber agente:crenca ...]
                                                 # roda sem gráficos e mostra crenças/ações
-    python -m agentdsl jogo       arquivo.agt   # abre o cenário gráfico (engine 2D)
+    python -m agentdsl jogo       arquivo.agt   # abre o jogo correspondente (arena/torres)
 """
 from __future__ import annotations
 
@@ -22,14 +22,24 @@ from .parser import analisar
 from .semantica import AnalisadorSemantico
 
 
-def _percepcoes_jogo():
-    try:
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-        from jogo import ALVOS, PERCEPCOES, ACOES_JOGO
-        from .semantica import ACOES_ENGINE
-        return PERCEPCOES, {**ACOES_ENGINE, **ACOES_JOGO}, ALVOS
-    except Exception:
+def _percepcoes_jogo(caminho: Path):
+    """Contrato do jogo (ações, percepções, alvos): procura um .py com o mesmo nome do .agt
+    (ex.: jogos/arena/arena.agt → jogos/arena/arena.py) que defina ACOES_JOGO e PERCEPCOES."""
+    import importlib
+    raiz = Path(__file__).resolve().parent.parent
+    py = caminho.resolve().with_suffix(".py")
+    if not py.exists():
         return {}, None, ()
+    try:
+        sys.path.insert(0, str(raiz))
+        modulo = ".".join(py.relative_to(raiz).with_suffix("").parts)
+        mod = importlib.import_module(modulo)
+    except Exception as e:  # sem contrato: verifica só com as ações da engine
+        print(f"(aviso: não foi possível carregar {py.name}: {e})")
+        return {}, None, ()
+    from .semantica import ACOES_ENGINE
+    acoes = {n: (v[0] if isinstance(v, tuple) else v) for n, v in getattr(mod, "ACOES_JOGO", {}).items()}
+    return getattr(mod, "PERCEPCOES", {}), {**ACOES_ENGINE, **acoes}, getattr(mod, "ALVOS", ())
 
 
 def _imprimir_diags(diags, fonte, arquivo) -> int:
@@ -66,8 +76,9 @@ def main(argv=None) -> int:
 
     if args.comando == "jogo":
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-        import jogo
-        return jogo.main(caminho)
+        import jogar
+        jogar.main([caminho.stem])
+        return 0
 
     prog, erros = analisar(fonte)
     if erros:
@@ -78,7 +89,7 @@ def main(argv=None) -> int:
         print(A.imprimir_arvore(prog))
         return 0
 
-    percepcoes, acoes, alvos = _percepcoes_jogo()
+    percepcoes, acoes, alvos = _percepcoes_jogo(caminho)
     sem = AnalisadorSemantico(acoes, percepcoes, alvos)
     diags = sem.analisar(prog)
     n = _imprimir_diags(diags, fonte, nome)

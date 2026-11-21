@@ -8,7 +8,7 @@ regra olhando só o próximo token.
 ```ebnf
 programa     = { agente } ;
 
-agente       = "agente" IDENT [ ":" IDENT ] [ decl_sprite ]
+agente       = ( "agente" | "modelo" ) IDENT [ ":" IDENT ] [ decl_sprite ]
                "{" { crenca | plano } "}" ;
 decl_sprite  = "sprite" TEXTO [ "em" "(" numero "," numero ")" ] [ "camada" numero ] ;
 numero       = [ "-" ] NUM ;
@@ -32,9 +32,14 @@ literal      = IDENT [ "(" [ args ] ")" ] ;
 args         = arg { "," arg } ;
 arg          = TEXTO | expr ;
 expr         = termo { ( "+" | "-" ) termo } ;
-termo        = fator { ( "*" | "/" ) fator } ;
+termo        = fator { ( "*" | "/" | "%" ) fator } ;
 fator        = NUM | VAR | IDENT | "(" expr ")" | "-" fator ;
 ```
+
+`agente` declara uma instância única, criada quando o programa começa
+(ex.: uma arma, o diretor de ondas). `modelo` declara um TIPO: nada é criado
+no início; o jogo (ou a ação `invocar`) cria quantas instâncias quiser, cada
+uma com a própria base de crenças (ex.: cada zumbi, cada torre).
 
 Observação sobre `condicao`: quando começa com `IDENT`, o parser lê um
 `literal`; se o token seguinte for um operador relacional, o literal (sem
@@ -49,8 +54,8 @@ Isso mantém a decisão com um token de lookahead.
 | VAR | `[A-Z_][a-zA-Z0-9_]*` | `V`, `X`, `_Ignorado` |
 | NUM | `[0-9]+(\.[0-9]+)?` | `3`, `0.85` |
 | TEXTO | `"([^"\\\n]|\\.)*"` | `"guarda.png"` |
-| reservadas | `agente sprite em camada nao verdadeiro` | |
-| símbolos | `{ } ( ) , . ; : & + - * / < > <= >= == != <- -+` | |
+| reservadas | `agente modelo sprite em camada nao verdadeiro` | |
+| símbolos | `{ } ( ) , . ; : & + - * / % < > <= >= == != <- -+` | |
 | comentários | `//...` até o fim da linha, `/* ... */` | |
 
 Regra do maior lexema: `<-` é um token só (não `<` seguido de `-`), assim
@@ -59,7 +64,7 @@ ponto porque a parte fracionária exige um dígito depois do `.`.
 
 ## Regras semânticas
 
-1. Nomes de agentes são únicos; o agente pai (`agente filho : pai`) deve
+1. Nomes de agentes e modelos são únicos; o pai (`modelo filho : pai`) deve
    existir e ser declarado antes (o que também impede herança cíclica).
 2. Crenças iniciais são fatos: não podem conter variáveis.
 3. Escopo de variáveis = o plano. Uma variável é **ligada** quando aparece no
@@ -67,10 +72,15 @@ ponto porque a parte fracionária exige um dígito depois do `.`.
    comparação ou num `nao`) é erro.
 4. Ações externas precisam existir no catálogo da engine/aplicação e receber
    o número e os tipos certos de argumentos (`num`, `atomo`, `texto`).
+   Dois tipos especiais de parâmetro: `modelo` (o átomo precisa ser um `modelo`
+   declarado — `invocar(zumbi, 3)`; usar um `agente` único dá erro) e `crenca`
+   (nome de crença que a ação vai adicionar — `temporizador(1.5, pronta)` conta
+   como fonte do evento `+pronta`).
 5. Tipos das crenças são inferidos (crenças iniciais, percepções declaradas,
    `+lit` nos corpos) e precisam ser consistentes; variáveis herdam o tipo do
    argumento em que foram ligadas e passam a `num` quando usadas em conta.
-6. Aritmética e `< <= > >=` só com números; divisão por zero constante é erro.
+6. Aritmética (`+ - * / %`) e `< <= > >=` só com números; divisão ou resto
+   por zero constante é erro.
 7. Avisos (não impedem a execução): evento que nunca será gerado, variável que
    aparece uma só vez, alvo de `perseguir`/`fugir` que não é agente nem objeto
    do ambiente, crença usada com aridades diferentes.
@@ -87,3 +97,28 @@ ponto porque a parte fracionária exige um dígito depois do `.`.
 - `nao lit` é negação por falha: verdadeiro se nenhuma crença unifica.
 - Cada agente processa no máximo N eventos por ciclo (padrão 64), o que
   impede que um laço de eventos trave o quadro da engine.
+- Um erro em tempo de execução (ex.: divisão por zero com variáveis) é
+  registrado no log e interrompe só aquele plano; o jogo continua.
+- Na engine, o ciclo de raciocínio roda em `atualizar_tardio` (LateUpdate):
+  primeiro os componentes do jogo geram as percepções do quadro, depois os
+  agentes reagem. Percepções que não mudaram não geram eventos; "pulsos"
+  (como `atingido(D)`) entram num quadro e saem no seguinte.
+
+## Ações da engine (disponíveis em qualquer jogo)
+
+| Ação | Efeito |
+|---|---|
+| `mover(dx, dy)` / `posicionar(x, y)` | desloca / coloca o objeto |
+| `rotacionar(g)` / `girar(g_por_s)` / `escalar(f)` | rotação única / contínua / escala |
+| `velocidade(vx, vy)` / `inverter` / `parar` | movimento contínuo |
+| `perseguir(alvo, v)` / `fugir(alvo, v)` | segue / foge de um objeto pelo nome |
+| `mudar_camada(n)` / `cor(r, g, b)` / `piscar` | aparência |
+| `trocar_imagem("x.png")` / `sumir` / `aparecer` | sprite |
+| `temporizador(seg, crenca)` | após `seg` segundos adiciona a crença |
+| `invocar(modelo, n)` / `invocar_aqui(modelo, n)` | cria instâncias (onde o jogo decidir / no lugar do agente) |
+| `invocar_serie(modelo, n, intervalo)` | cria n instâncias, uma a cada `intervalo` segundos |
+| `morrer` | destrói o GameObject (e a instância do agente) |
+| `imprimir(...)` | escreve no log/HUD |
+
+Cada jogo acrescenta as suas (ex.: `atirar`, `pagar`, `soltar_xp`) declarando
+a assinatura em Python; a análise semântica usa essas assinaturas.

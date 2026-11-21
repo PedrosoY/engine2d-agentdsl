@@ -119,17 +119,22 @@ def contar_python(caminho):
     return len(linhas), len(toks)
 
 
+def _bloco(fonte, cabecalho):
+    """Recorta 'modelo X ... { ... }' do arquivo (até a chave que fecha)."""
+    ini = fonte.index(cabecalho)
+    fim = fonte.index("\n}", ini) + 2
+    return fonte[ini:fim]
+
+
 def concisao():
-    fonte = (RAIZ / "exemplos" / "jogo.agt").read_text(encoding="utf-8")
-    ini = fonte.index("agente guarda ")
-    fim = fonte.index("// ---------- Fujão")
-    trecho = fonte[ini:fim]
+    fonte = (RAIZ / "jogos" / "arena" / "arena.agt").read_text(encoding="utf-8")
+    trecho = _bloco(fonte, "modelo zumbi ") + "\n" + _bloco(fonte, "modelo atirador ")
     linhas_dsl = [l for l in trecho.splitlines() if l.strip() and not l.strip().startswith("//")]
     toks_dsl = len(Lexer(trecho).tokens()) - 1
-    l_py, t_py = contar_python(RAIZ / "comparacao" / "guarda_em_python.py")
+    l_py, t_py = contar_python(RAIZ / "comparacao" / "inimigos_em_python.py")
     r = [{"versao": "AgentDSL", "linhas": len(linhas_dsl), "tokens": toks_dsl},
          {"versao": "Python", "linhas": l_py, "tokens": t_py}]
-    print(f"concisão (guarda + guarda2): DSL {len(linhas_dsl)} linhas/{toks_dsl} tokens  x  "
+    print(f"concisão (zumbi + atirador): DSL {len(linhas_dsl)} linhas/{toks_dsl} tokens  x  "
           f"Python {l_py} linhas/{t_py} tokens")
     return r
 

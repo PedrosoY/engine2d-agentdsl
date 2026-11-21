@@ -39,10 +39,10 @@ class Sprite:
         self.regiao_uv = (0.0, 0.0, 1.0, 1.0)
         self.visivel = True
         self.espaco_tela = espaco_tela
-        self.cena = None  # preenchido por Cena.adicionar
+        self.lista = None  # preenchido por ListaRenderizacao.adicionar
         self.dados: dict = {}  # espaço livre para a aplicação (ex.: agente da DSL)
 
-    # A camada avisa a cena para reordenar no próximo quadro.
+    # A camada avisa a lista de renderização para reordenar no próximo quadro.
     @property
     def camada(self) -> int:
         return self._camada
@@ -52,8 +52,8 @@ class Sprite:
         valor = int(valor)
         if valor != self._camada:
             self._camada = valor
-            if self.cena is not None:
-                self.cena.marcar_reordenar()
+            if self.lista is not None:
+                self.lista.marcar_reordenar()
 
     # Atalhos para a transformação
     @property
@@ -80,7 +80,10 @@ class Sprite:
 
     def contem_ponto(self, px: float, py: float) -> bool:
         """Teste de seleção (picking): leva o ponto para o espaço local do quad."""
-        inv = np.linalg.inv(self.matriz_final())
+        m = self.matriz_final()
+        if abs(m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]) < 1e-9:
+            return False   # escala ou tamanho zero: o sprite não tem área (e a matriz não tem inversa)
+        inv = np.linalg.inv(m)
         lx, ly = matematica.aplicar(inv, px, py)
         return -0.5 <= lx <= 0.5 and -0.5 <= ly <= 0.5
 
