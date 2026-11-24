@@ -1,0 +1,9 @@
+// Fase 4: janela do robo2: pega da bancada, põe calda e coberturas e entrega.
++!finalizar : livre & na_bancada(bancada1) <- pegar_de(bancada1); !calda.
++!finalizar : livre <- esperar(0.5); !finalizar.
++!finalizar <- jogar_fora; !finalizar.
++!calda : pedido_calda(C) <- adicionar_calda(C); !cobrir.
++!calda <- !cobrir.
++!cobrir : pedido_cobertura(C) & nao tem_cobertura(C) <- adicionar_cobertura(C); !cobrir.
++!cobrir <- entregar; !finalizar.
+-!finalizar <- jogar_fora; !finalizar.

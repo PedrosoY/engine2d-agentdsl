@@ -1,4 +1,4 @@
-"""Integração da AgentDSL com a engine no estilo Unity:  Ação → Engine 2D → GameObject.
+"""Integração da AgentDSL com a engine:  Ação → Engine 2D → GameObject.
 
 * ``ServicoAgentes`` (um por cena): compila o .agt, roda o ciclo de raciocínio de
   todos os agentes em ``atualizar_tardio`` (depois que os componentes do jogo
@@ -26,8 +26,12 @@ from .semantica import ACOES_ENGINE
 
 
 class ServicoAgentes(Componente):
+    """Roda os agentes de um arquivo .agt. Num projeto: um objeto com este componente,
+    campo ``arquivo`` = "Assets/Agentes/x.agt". Ações extras vêm dos scripts (@acao_dsl)."""
+
     CAMPOS = {"arquivo": "str"}
     arquivo = ""
+    MENU = "AgentDSL"
 
     def __init__(self, fonte: str | None = None, acoes_jogo: dict | None = None,
                  percepcoes: dict | None = None, alvos=(), prefabs: dict | None = None, **campos):
@@ -37,11 +41,12 @@ class ServicoAgentes(Componente):
         prefabs:    modelo da DSL → nome do prefab da cena usado para criar o corpo
         """
         super().__init__(**campos)
+        from engine2d.projeto import ACOES_DSL, ALVOS_DSL, PERCEPCOES_DSL
         self.fonte = fonte
-        self.acoes_jogo = dict(acoes_jogo or {})
-        self.percepcoes = dict(percepcoes or {})
+        self.acoes_jogo = dict(ACOES_DSL if acoes_jogo is None else acoes_jogo)
+        self.percepcoes = dict(PERCEPCOES_DSL if percepcoes is None else percepcoes)
         self.nomes_percepcoes = {n for n, _ in self.percepcoes}
-        self.alvos = tuple(alvos)
+        self.alvos = tuple(alvos) or tuple(ALVOS_DSL)
         self.prefabs = dict(prefabs or {})
         self.sis: SistemaAgentes | None = None
         self.temporizadores: list[list] = []     # [segundos_restantes, agente, crença]
@@ -65,6 +70,10 @@ class ServicoAgentes(Componente):
             raise
         self.sis.ao_registrar = self._log
         self.cena.servicos["agentes"] = self
+        self._criar_agentes_unicos()
+        self.sis.iniciar()   # crenças iniciais dos agentes únicos → eventos +b
+
+    def _criar_agentes_unicos(self):
         # Agentes únicos (sem "modelo") ganham um GameObject próprio para aparecerem
         # na hierarquia e no inspector. Se tiverem sprite declarado, ele é criado.
         for ag in list(self.sis.agentes.values()):
@@ -74,7 +83,66 @@ class ServicoAgentes(Componente):
                 go.transform.x, go.transform.y = d.x, d.y
                 go.adicionar(SpriteRenderer(imagem=d.imagem, camada=d.camada))
             go.adicionar(ComportamentoAgente(agente=ag.nome))
-        self.sis.iniciar()   # crenças iniciais dos agentes únicos → eventos +b
+
+    # --- trocar o programa com o jogo rodando ------------------------------------
+    def compilar(self, fonte: str):
+        """Só compila (léxico, sintático, semântico). Devolve (sistema | None, diagnósticos)."""
+        acoes = {**ACOES_ENGINE, **{n: a for n, (a, _) in self.acoes_jogo.items()}}
+        try:
+            sis = SistemaAgentes(fonte, ambiente=self, acoes=acoes, percepcoes=self.percepcoes,
+                                 alvos=self.alvos, arquivo=self.arquivo or "<fonte>")
+        except ErroCompilacao as e:
+            return None, e.diagnosticos
+        return sis, sis.avisos
+
+    def recompilar(self, fonte: str):
+        """Compila um programa novo e, se não tiver erros, troca o programa de TODOS os agentes
+        sem reiniciar o jogo: cada objeto com ``modelo`` ganha uma instância nova do mesmo modelo
+        (as crenças recomeçam e as percepções voltam no próximo quadro); os agentes únicos são
+        recriados. Devolve (ok, diagnósticos)."""
+        novo, diags = self.compilar(fonte)
+        if novo is None:
+            return False, diags
+        self.fonte = fonte
+        self.sis = novo
+        novo.ao_registrar = self._log
+        self.temporizadores.clear()
+        self.series.clear()
+        for go in list(self.cena.objetos):
+            c = go.obter(ComportamentoAgente)
+            if c is None or not c._iniciado or go.destruido:
+                continue
+            if c.agente:
+                self.cena._destruir_agora(go)
+            else:
+                self.religar(c, c.modelo)
+        self._criar_agentes_unicos()
+        self.cena.iniciar_pendentes()
+        novo.iniciar()
+        return True, diags
+
+    def religar(self, comp, modelo: str) -> str:
+        """Liga o objeto a uma instância nova de ``modelo`` (usa o primeiro modelo se ele não existir)."""
+        if modelo not in self.sis.modelos:
+            if not self.sis.modelos:
+                return comp.modelo
+            novo_nome = next(iter(self.sis.modelos))
+            self._log(f"[{comp.gameobject.nome}] modelo '{modelo}' não existe mais; usando '{novo_nome}'", "erro")
+            modelo = novo_nome
+        ag = self.sis.criar_instancia(modelo, nome=comp.gameobject.nome)
+        ag.corpo = comp
+        comp.ag = ag
+        comp.modelo = modelo
+        comp._pulsos = []
+        comp.comportamento = None
+        comp.giro = 0.0
+        return modelo
+
+    def trocar_modelo(self, comp, modelo: str) -> str:
+        """Muda o modelo (o "programa") de um objeto já existente."""
+        if getattr(comp, "ag", None) is not None:
+            self.sis.remover_instancia(comp.ag)
+        return self.religar(comp, modelo)
 
     def _log(self, linha, tipo):
         if self.ao_registrar:
@@ -111,16 +179,31 @@ class ServicoAgentes(Componente):
                 x, y = ox + random.uniform(-12, 12), oy + random.uniform(-12, 12)
             elif self.ponto_de_invocacao:
                 x, y = self.ponto_de_invocacao(modelo)
-            else:
-                x, y = random.uniform(0, 800), random.uniform(0, 600)
+            else:   # padrão: na borda da área que a câmera mostra (nasce "fora da tela")
+                x, y = self._borda_da_camera()
             go = self.criar_corpo(modelo, x, y)
             if self.ao_invocar:
                 self.ao_invocar(go, origem)
             criados.append(go)
         return criados
 
+    def _borda_da_camera(self):
+        m = self.motor
+        if m is None:
+            return random.uniform(0, 800), random.uniform(0, 600)
+        cam = m.camera
+        hw, hh = cam.largura / (2 * cam.zoom) + 30, cam.altura / (2 * cam.zoom) + 30
+        lado = random.randrange(4)
+        if lado < 2:
+            return cam.x + random.uniform(-hw, hw), cam.y + (hh if lado == 0 else -hh)
+        return cam.x + (hw if lado == 2 else -hw), cam.y + random.uniform(-hh, hh)
+
     def criar_corpo(self, modelo: str, x: float, y: float):
         prefab = self.prefabs.get(modelo)
+        arq_prefab = Path("Assets/Prefabs") / f"{modelo}.prefab"   # convenção dos projetos
+        if prefab is None and arq_prefab.exists():
+            import json
+            prefab = json.loads(arq_prefab.read_text(encoding="utf-8"))
         if prefab is not None:
             go = self.cena.instanciar(prefab, x, y)
         else:
@@ -128,10 +211,36 @@ class ServicoAgentes(Componente):
             d = self.sis.modelos[modelo].sprite
             if d is not None:
                 go.adicionar(SpriteRenderer(imagem=d.imagem, camada=d.camada))
-        go.adicionar(ComportamentoAgente(modelo=modelo))
+        comp = go.obter(ComportamentoAgente)
+        if comp is None:
+            go.adicionar(ComportamentoAgente(modelo=modelo))
+        else:                    # o prefab já traz o componente (com os campos ajustados no Inspector)
+            comp.modelo, comp.agente = modelo, ""
         return go
 
     # --- ações vindas do interpretador ----------------------------------------------
+    # --- objetivos (+!g): o corpo pode decidir quando o objetivo começa ------------------------------
+    def _gancho_corpo(self, agente, metodo):
+        corpo = getattr(agente, "corpo", None)
+        if corpo is None or corpo.gameobject is None:
+            return None
+        for comp in corpo.gameobject.componentes:
+            f = getattr(comp, metodo, None)
+            if f is not None:
+                return f
+        return None
+
+    def objetivo(self, agente, nome: str, args: tuple) -> bool:
+        """``!nome`` no corpo de um plano. Se um componente do objeto tiver ``objetivo_dsl``, ele cuida
+        (ex.: o robô só começa o objetivo depois dos comandos anteriores). Devolve True se cuidou."""
+        f = self._gancho_corpo(agente, "objetivo_dsl")
+        return bool(f and f(nome, args))
+
+    def sem_plano(self, agente, nome: str, args: tuple) -> None:
+        f = self._gancho_corpo(agente, "sem_plano_dsl")
+        if f:
+            f(nome, args)
+
     def executar(self, agente, nome: str, args: list) -> None:
         corpo = agente.corpo
         if nome in self.acoes_jogo:
@@ -155,15 +264,28 @@ def _nome(v) -> str:
 class ComportamentoAgente(Componente):
     """Liga o GameObject a um agente: ``modelo`` (cria instância) ou ``agente`` (único)."""
 
-    CAMPOS = {"modelo": "str", "agente": "str"}
+    CAMPOS = {"modelo": "str", "agente": "str", "olhar_movimento": "bool", "frente_do_sprite": "float"}
     modelo = ""
     agente = ""
+    olhar_movimento = True     # gira o sprite para a direção em que anda
+    frente_do_sprite = 0.0     # para onde o desenho aponta (graus): 0 = direita, 90 = cima, -90 = baixo
+    MENU = "AgentDSL"
 
     def iniciar(self):
-        srv = self.cena.servicos["agentes"]
+        srv = self.cena.servicos.get("agentes")
+        if srv is None:   # o serviço ainda não iniciou (ordem dos objetos na cena): inicia agora
+            for s in self.cena.componentes_do_tipo(ServicoAgentes):
+                if not s._iniciado:
+                    s._iniciado = True
+                    s.iniciar()
+            srv = self.cena.servicos.get("agentes")
+            if srv is None:
+                raise RuntimeError("ComportamentoAgente precisa de um objeto com ServicoAgentes na cena")
         self.srv = srv
         if self.agente:
             self.ag = srv.sis.agentes[self.agente]
+        elif getattr(self, "manter_nome", False):     # o jogo já deu um nome ao objeto (ex.: robo2)
+            self.ag = srv.sis.criar_instancia(self.modelo, nome=self.gameobject.nome)
         else:
             self.ag = srv.sis.criar_instancia(self.modelo)
             self.gameobject.nome = self.ag.nome
@@ -172,7 +294,6 @@ class ComportamentoAgente(Componente):
         self.render = self.obter(SpriteRenderer)
         self.giro = 0.0
         self.comportamento = None     # ("perseguir" | "fugir", alvo, velocidade)
-        self.olhar_movimento = True   # gira o sprite para a direção em que anda
         self._pulsos: list[tuple] = []
 
     # --- percepções -------------------------------------------------------------------
@@ -208,7 +329,6 @@ class ComportamentoAgente(Componente):
             t.rotacao += args[0]
         elif nome == "girar":
             self.giro = float(args[0])
-            self.olhar_movimento = self.giro == 0
         elif nome == "escalar":
             t.escala_x *= args[0]
             t.escala_y *= args[0]
@@ -278,7 +398,7 @@ class ComportamentoAgente(Componente):
         if self.giro:
             self.transform.rotacao += self.giro * dt
         elif self.olhar_movimento and self.rb is not None and (self.rb.vx or self.rb.vy):
-            self.transform.rotacao = math.degrees(math.atan2(self.rb.vy, self.rb.vx))
+            self.transform.rotacao = math.degrees(math.atan2(self.rb.vy, self.rb.vx)) - self.frente_do_sprite
 
     def ao_destruir(self):
         if getattr(self, "ag", None) is not None:

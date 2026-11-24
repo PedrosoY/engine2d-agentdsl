@@ -1,0 +1,26 @@
+{
+  "nome": "robo",
+  "tag": "robo",
+  "ativo": true,
+  "transform": {
+    "x": 0.0,
+    "y": 0.0,
+    "rotacao": 0.0,
+    "escala_x": 4.0,
+    "escala_y": 4.0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Personagens/robo.png",
+        "camada": 5
+      }
+    },
+    {
+      "tipo": "Robo",
+      "campos": {}
+    }
+  ],
+  "filhos": []
+}

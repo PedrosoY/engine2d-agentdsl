@@ -1,0 +1,19 @@
+﻿NAVINHA — shoot 'em up feito na Engine2D
+========================================
+
+Jogar:   python rodar.py ProjetoNavinha      (ou pelo menu: python jogar.py)
+Editar:  python editor.py ProjetoNavinha
+
+Controles: WASD ou setas movem · Espaço (ou Z) atira · Shift = desvio fino · P pausa · Esc menu
+No fim: R joga de novo.
+
+Onde está cada coisa
+- Assets/Agentes/navinha.agt   IA dos inimigos, do chefe e do diretor das ondas (AgentDSL)
+- Assets/Scripts/AcoesNave.py  ações e percepções que o jogo acrescenta à DSL
+- Assets/Scripts/              Jogador, Tiro, NaveInimiga, Item, Hud, Fase, Menu, Navinha (comum)
+- Assets/Prefabs/              um prefab por inimigo (mesmo nome do modelo no .agt), tiros, itens, explosão
+- Assets/Cenas/                Menu.cena (cena inicial) e Fase1.cena
+- Saves/recorde.json           o recorde (apague para zerar)
+
+Este projeto foi montado pelo editor com o robô de testes: python montar_navinha.py
+Arte, sons e fonte: Kenney — Space Shooter Redux (CC0), ver Assets/Sprites/LICENCA_Kenney.txt

@@ -1,0 +1,188 @@
+{
+  "nome": "Menu",
+  "objetos": [
+    {
+      "nome": "Câmera",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 640.0,
+        "y": 360.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "CameraPrincipal",
+          "campos": {
+            "zoom": 0.75,
+            "cor_fundo": [
+              0.765,
+              0.89,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      ],
+      "filhos": [
+        {
+          "nome": "Ceu",
+          "tag": "",
+          "ativo": true,
+          "transform": {
+            "x": 0.0,
+            "y": -104.0,
+            "rotacao": 0.0,
+            "escala_x": 1.0,
+            "escala_y": 1.0
+          },
+          "componentes": [
+            {
+              "tipo": "FundoRolante",
+              "campos": {
+                "imagem": "Assets/Sprites/Fundos/background_clouds.png",
+                "velocidade_x": -12.0,
+                "velocidade_y": 0.0,
+                "paralaxe": 0.15,
+                "repetir_x": true,
+                "repetir_y": false,
+                "largura": 1500.0,
+                "altura": 512.0,
+                "escala": 2.0,
+                "camada_desenho": "Fundo",
+                "camada": 0,
+                "cor": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            }
+          ],
+          "filhos": []
+        }
+      ]
+    },
+    {
+      "nome": "Chao",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 0.0,
+        "y": 640.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "MapaTiles",
+          "campos": {
+            "arquivo": "Assets/Fases/menu.mapa",
+            "tamanho_celula": 64.0,
+            "camada_desenho": "Padrao",
+            "ordem": 0,
+            "camada_fisica": "chao",
+            "tag_colisores": "chao"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Personagem",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 329.9317626953125,
+        "y": 230.43655395507812,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Personagem/character_green_jump.png",
+            "cor": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "camada_desenho": "Padrao",
+            "ordem": 10,
+            "virar_x": false,
+            "virar_y": false,
+            "largura": 0.0,
+            "altura": 0.0,
+            "visivel": true,
+            "estatico": false
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Slime",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 900.1910400390625,
+        "y": 159.49522399902344,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Inimigos/slime_normal_walk_a.png",
+            "cor": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "camada_desenho": "Padrao",
+            "ordem": 0,
+            "virar_x": true,
+            "virar_y": false,
+            "largura": 0.0,
+            "altura": 0.0,
+            "visivel": true,
+            "estatico": false
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Menu",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 480.0,
+        "y": 270.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "Menu",
+          "campos": {
+            "cena_jogo": "Assets/Cenas/Fase1.cena",
+            "titulo": "PULO VERDE"
+          }
+        }
+      ],
+      "filhos": []
+    }
+  ]
+}

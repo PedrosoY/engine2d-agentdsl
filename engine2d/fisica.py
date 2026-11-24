@@ -1,4 +1,9 @@
-"""Física 2D simples: integração de velocidade, detecção e resposta a colisões.
+"""Física 2D simples: gravidade, integração de velocidade, detecção e resposta a colisões.
+
+Corpos (CorpoRigido.tipo): dinâmico (cai e é empurrado), cinemático (só anda pela velocidade) e
+estático (não se mexe; Colisor sem CorpoRigido também é estático).
+Para nada atravessar o chão quando anda rápido, o passo é dividido em subpassos de no máximo
+``passo_max`` pixels de deslocamento.
 
 Fase ampla (broad phase): grade espacial uniforme (spatial hash). Cada colisor
 é inserido nas células que sua AABB toca; só pares que dividem célula são
@@ -25,6 +30,9 @@ class Fisica:
         self._ignorar: set[frozenset] = set()
         self.pares_testados = 0
         self.contatos_quadro = 0
+        self.gravidade = (0.0, 0.0)      # px/s² (o projeto define; jogos de cima não têm gravidade)
+        self.passo_max = 10.0            # deslocamento máximo por subpasso (px)
+        self.max_subpassos = 6
 
     # --- registro ---------------------------------------------------------
     def registrar_colisor(self, c):
@@ -79,20 +87,72 @@ class Fisica:
                 melhor, dmin = c, d
         return melhor
 
+    def lancar_raio(self, x, y, dx, dy, distancia, camada: str | None = None, ignorar=None, gatilhos=False):
+        """Raio (raycast) de (x, y) na direção (dx, dy) até ``distancia``. Devolve
+        (colisor, distância, ponto) do primeiro colisor atingido, ou None.
+        ``camada``: só colisores dessa camada física; ``ignorar``: um GameObject (ex.: quem lança)."""
+        n = math.hypot(dx, dy) or 1.0
+        dx, dy = dx / n, dy / n
+        melhor = None
+        for c in self.colisores:
+            go = c.gameobject
+            if go is ignorar or not c.habilitado or not go.ativo_na_hierarquia or (c.gatilho and not gatilhos):
+                continue
+            if camada and c.camada_fisica != camada:
+                continue
+            t = _raio_colisor(c, x, y, dx, dy, distancia)
+            if t is not None and (melhor is None or t < melhor[1]):
+                melhor = (c, t, (x + dx * t, y + dy * t))
+        return melhor
+
     # --- passo da simulação ----------------------------------------------------
     def passo(self, dt: float) -> None:
-        for rb in self.corpos:
-            if not rb.habilitado or not rb.gameobject.ativo_na_hierarquia:
-                continue
-            if rb.vx or rb.vy:
-                t = rb.gameobject.transform
-                t.x += rb.vx * dt
-                t.y += rb.vy * dt
+        corpos = [rb for rb in self.corpos if rb.habilitado and rb.gameobject.ativo_na_hierarquia]
+        gx, gy = self.gravidade
+        for rb in corpos:
+            if rb.tipo == "dinamico":
+                rb.vx += gx * rb.escala_gravidade * dt
+                rb.vy += gy * rb.escala_gravidade * dt
             if rb.arrasto:
                 f = max(0.0, 1.0 - rb.arrasto * dt)
                 rb.vx *= f
                 rb.vy *= f
+            if rb.velocidade_maxima > 0:
+                v = math.hypot(rb.vx, rb.vy)
+                if v > rb.velocidade_maxima:
+                    rb.vx *= rb.velocidade_maxima / v
+                    rb.vy *= rb.velocidade_maxima / v
+            if rb.congelar_x:
+                rb.vx = 0.0
+            if rb.congelar_y:
+                rb.vy = 0.0
+            rb.no_chao = rb.no_teto = False
+            rb.na_parede = 0
+            rb.contatos = []
+        desloc = max((max(abs(rb.vx), abs(rb.vy)) * dt for rb in corpos if rb.tipo != "estatico"), default=0.0)
+        n = max(1, min(self.max_subpassos, math.ceil(desloc / self.passo_max)))
+        contatos = set()
+        for _ in range(n):
+            for rb in corpos:
+                if rb.tipo != "estatico" and (rb.vx or rb.vy):
+                    t = rb.gameobject.transform
+                    t.x += rb.vx * dt / n
+                    t.y += rb.vy * dt / n
+            contatos |= self._detectar_e_resolver()
+        self.contatos_quadro = len(contatos)
 
+        novos = contatos - self._contatos
+        saidas = self._contatos - contatos
+        self._contatos = contatos
+        for a, b in novos:
+            _avisar(a, b, "ao_entrar_colisao")
+            _avisar(b, a, "ao_entrar_colisao")
+        for a, b in saidas:
+            if not a.gameobject.destruido and not b.gameobject.destruido:
+                _avisar(a, b, "ao_sair_colisao")
+                _avisar(b, a, "ao_sair_colisao")
+
+    def _detectar_e_resolver(self) -> set:
         ativos = [c for c in self.colisores if c.habilitado and c.gameobject.ativo_na_hierarquia]
         # Fase ampla: grade espacial
         grade: dict[tuple, list] = defaultdict(list)
@@ -135,18 +195,7 @@ class Fisica:
                     if not a.gameobject.destruido and not b.gameobject.destruido and not (a.gatilho or b.gatilho):
                         _separar(a, b, mtv)
         self.pares_testados = testados
-        self.contatos_quadro = len(contatos)
-
-        novos = contatos - self._contatos
-        saidas = self._contatos - contatos
-        self._contatos = contatos
-        for a, b in novos:
-            _avisar(a, b, "ao_entrar_colisao")
-            _avisar(b, a, "ao_entrar_colisao")
-        for a, b in saidas:
-            if not a.gameobject.destruido and not b.gameobject.destruido:
-                _avisar(a, b, "ao_sair_colisao")
-                _avisar(b, a, "ao_sair_colisao")
+        return contatos
 
 
 def _avisar(c, outro, metodo):
@@ -206,17 +255,92 @@ def _intersecao(a, b):
     return (-mtv[0], -mtv[1]) if inverter else mtv
 
 
+def _corpo(c):
+    return c.gameobject.obter("CorpoRigido")
+
+
+def _so_por_cima(plataforma, corpo_col, rb, nx, ny, prof):
+    """Plataforma que só segura quem vem de cima (dá para subir pulando por baixo dela)."""
+    if rb is None:
+        return False
+    return ny > 0.5 and rb.vy <= 1.0 and prof <= max(12.0, abs(rb.vy) / 30.0)
+
+
 def _separar(a, b, mtv):
-    ra, rb = a.obter("CorpoRigido"), b.obter("CorpoRigido")
-    ma = 0.0 if ra is None or ra.cinematico else 1.0 / max(ra.massa, 1e-6)
-    mb = 0.0 if rb is None or rb.cinematico else 1.0 / max(rb.massa, 1e-6)
+    ra, rb = _corpo(a), _corpo(b)
+    ma = 0.0 if ra is None or ra.tipo != "dinamico" else 1.0 / max(ra.massa, 1e-6)
+    mb = 0.0 if rb is None or rb.tipo != "dinamico" else 1.0 / max(rb.massa, 1e-6)
     soma = ma + mb
     if soma == 0:
         return
     dx, dy = mtv
+    prof = math.hypot(dx, dy)
+    if prof < 1e-9:
+        return
+    nx, ny = dx / prof, dy / prof           # normal que empurra b para longe de a
+    if getattr(a, "so_por_cima", False) and not _so_por_cima(a, b, rb, nx, ny, prof):
+        return
+    if getattr(b, "so_por_cima", False) and not _so_por_cima(b, a, ra, -nx, -ny, prof):
+        return
     ta, tb = a.gameobject.transform, b.gameobject.transform
     ka, kb = ma / soma, mb / soma
     ta.x -= dx * ka
     ta.y -= dy * ka
     tb.x += dx * kb
     tb.y += dy * kb
+    _responder(rb, b, a, nx, ny, mb > 0)
+    _responder(ra, a, b, -nx, -ny, ma > 0)
+
+
+def _responder(rb, colisor, outro, nx, ny, movel):
+    """Corta a velocidade que vai contra a superfície (com quique) e anota chão/teto/parede."""
+    if rb is None:
+        return
+    rb.contatos.append((outro, nx, ny))
+    if ny > 0.7:
+        rb.no_chao = True
+    elif ny < -0.7:
+        rb.no_teto = True
+    elif abs(nx) > 0.7:
+        rb.na_parede = -1 if nx > 0 else 1
+    if not movel:
+        return
+    ro = _corpo(outro)
+    ovx, ovy = (ro.vx, ro.vy) if ro is not None and ro.tipo != "estatico" else (0.0, 0.0)
+    rvx, rvy = rb.vx - ovx, rb.vy - ovy      # velocidade relativa (plataformas que andam)
+    vn = rvx * nx + rvy * ny
+    if vn < 0:
+        e = rb.elasticidade if abs(vn) > 40 else 0.0
+        rb.vx -= (1 + e) * vn * nx
+        rb.vy -= (1 + e) * vn * ny
+
+
+def _raio_colisor(c, x, y, dx, dy, dist):
+    cx, cy = c.centro()
+    e = c.escala()
+    if c.forma == "circulo":
+        r = c.raio * e
+        fx, fy = x - cx, y - cy
+        b = fx * dx + fy * dy
+        k = fx * fx + fy * fy - r * r
+        disc = b * b - k
+        if disc < 0:
+            return None
+        t = -b - math.sqrt(disc)
+        if t < 0:
+            t = 0.0 if k <= 0 else None
+        return t if t is not None and t <= dist else None
+    hw, hh = c.largura * e / 2, c.altura * e / 2
+    tmin, tmax = 0.0, dist
+    for o, d, lo, hi in ((x, dx, cx - hw, cx + hw), (y, dy, cy - hh, cy + hh)):
+        if abs(d) < 1e-9:
+            if o < lo or o > hi:
+                return None
+        else:
+            t1, t2 = (lo - o) / d, (hi - o) / d
+            if t1 > t2:
+                t1, t2 = t2, t1
+            tmin, tmax = max(tmin, t1), min(tmax, t2)
+            if tmin > tmax:
+                return None
+    return tmin

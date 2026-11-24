@@ -1,0 +1,43 @@
+{
+  "nome": "corredor",
+  "tag": "inimigo",
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "escala_x": 0.9,
+    "escala_y": 0.9
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Personagens/corredor.png",
+        "camada": 2
+      }
+    },
+    {
+      "tipo": "CorpoRigido",
+      "campos": {
+        "massa": 0.7
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "raio": 18,
+        "camada_fisica": "inimigo"
+      }
+    },
+    {
+      "tipo": "Inimigo",
+      "campos": {
+        "raio_toque": 18
+      }
+    },
+    {
+      "tipo": "Piscar",
+      "campos": {}
+    }
+  ],
+  "filhos": []
+}

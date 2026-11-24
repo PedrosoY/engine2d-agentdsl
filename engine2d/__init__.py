@@ -1,4 +1,4 @@
-"""Engine2D: mini engine 2D em Python + OpenGL com arquitetura no estilo Unity/Godot.
+"""Engine2D: mini engine 2D em Python + OpenGL com GameObjects e componentes.
 
     from engine2d import Motor, Cena, Componente, SpriteRenderer, Colisor, CorpoRigido
 
@@ -27,15 +27,17 @@ if os.environ.get("ENGINE2D_DEBUG_GL") != "1":
 
 from .camera import Camera2D  # noqa: E402
 from .cena import Cena  # noqa: E402
-from .componentes import (Animador, CameraSegue, Colisor, CorpoRigido, Piscar,  # noqa: E402
-                          SpriteRenderer, TempoDeVida)
+from .componentes import (Animador, CameraPrincipal, CameraSegue, Colisor, CorpoRigido,  # noqa: E402
+                          Piscar, SpriteRenderer, TempoDeVida, TextoUI, CamadasFisica, EmissorParticulas,
+                          FundoRolante, FonteAudio, MapaTiles, Luz2D, ProjetorSombra2D)
 from .lista_render import ListaRenderizacao  # noqa: E402
 from .objeto import Componente, GameObject, Transform  # noqa: E402
 from .sprite import Sprite  # noqa: E402
 from .transformacao import Transformacao  # noqa: E402
 
 __all__ = ["Camera2D", "Cena", "Componente", "GameObject", "Transform", "SpriteRenderer", "Colisor",
-           "CorpoRigido", "Animador", "CameraSegue", "Piscar", "TempoDeVida", "ListaRenderizacao",
+           "CorpoRigido", "Animador", "CameraSegue", "CameraPrincipal", "TextoUI", "CamadasFisica", "Piscar",
+           "TempoDeVida", "EmissorParticulas", "FundoRolante", "FonteAudio", "MapaTiles", "Luz2D", "ProjetorSombra2D", "ListaRenderizacao",
            "Sprite", "Transformacao", "Motor", "Textura"]
 
 

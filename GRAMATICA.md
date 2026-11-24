@@ -15,7 +15,7 @@ numero       = [ "-" ] NUM ;
 
 crenca       = literal "." ;
 plano        = evento [ ":" contexto ] "<-" corpo "." ;
-evento       = ( "+" | "-" ) literal ;
+evento       = ( "+" | "-" ) [ "!" ] literal ;     (* +!g novo objetivo, -!g o objetivo falhou *)
 
 contexto     = condicao { "&" condicao } ;
 condicao     = "verdadeiro"
@@ -26,6 +26,7 @@ op_rel       = "<" | "<=" | ">" | ">=" | "==" | "!=" ;
 
 corpo        = acao { ";" acao } ;
 acao         = ( "+" | "-" | "-+" ) literal      (* altera a base de crenças *)
+             | "!" literal                       (* persegue um objetivo: dispara +!literal *)
              | IDENT [ "(" [ args ] ")" ] ;      (* ação enviada à engine    *)
 
 literal      = IDENT [ "(" [ args ] ")" ] ;
@@ -55,7 +56,7 @@ Isso mantém a decisão com um token de lookahead.
 | NUM | `[0-9]+(\.[0-9]+)?` | `3`, `0.85` |
 | TEXTO | `"([^"\\\n]|\\.)*"` | `"guarda.png"` |
 | reservadas | `agente modelo sprite em camada nao verdadeiro` | |
-| símbolos | `{ } ( ) , . ; : & + - * / % < > <= >= == != <- -+` | |
+| símbolos | `{ } ( ) , . ; : & + - * / % < > <= >= == != <- -+ !` | |
 | comentários | `//...` até o fim da linha, `/* ... */` | |
 
 Regra do maior lexema: `<-` é um token só (não `<` seguido de `-`), assim
@@ -94,7 +95,7 @@ ponto porque a parte fracionária exige um dígito depois do `.`.
   (os do filho antes dos herdados); o primeiro cujo gatilho unifica e cujo
   contexto é satisfeito é executado inteiro.
 - `-+lit` remove todas as crenças com o mesmo nome/aridade e adiciona `lit`.
-- `nao lit` é negação por falha: verdadeiro se nenhuma crença unifica.
+- `nao lit` é negação por falha: verdadeiro se nenhuma crença unifica. Variáveis anônimas (`_X`) podem aparecer livres: `nao carregando(_X)` = não carrega nada.
 - Cada agente processa no máximo N eventos por ciclo (padrão 64), o que
   impede que um laço de eventos trave o quadro da engine.
 - Um erro em tempo de execução (ex.: divisão por zero com variáveis) é
@@ -122,3 +123,22 @@ ponto porque a parte fracionária exige um dígito depois do `.`.
 
 Cada jogo acrescenta as suas (ex.: `atirar`, `pagar`, `soltar_xp`) declarando
 a assinatura em Python; a análise semântica usa essas assinaturas.
+
+
+## Objetivos (estilo AgentSpeak / Jason)
+
+Além de crenças, um agente pode ter **objetivos**. `+!g` é o evento "quero alcançar g"; o plano diz
+como. `!g` no corpo de um plano persegue o objetivo; `-!g` é o evento "o objetivo g falhou".
+
+```
++ligado <- !produzir_sorvete.
++!produzir_sorvete <- pegar_casquinha(medio); adicionar_sorvete(creme); entregar; !produzir_sorvete.
+-!produzir_sorvete <- jogar_fora; !produzir_sorvete.
+```
+
+Regras semânticas: todo `!g` precisa de um plano `+!g` com a mesma aridade (senão é erro, com sugestão
+de nome parecido); um `-!g` sem `+!g` gera aviso. Objetivos não são crenças: não entram na base de
+crenças, só na fila de eventos. Se um `+!g` não tiver plano aplicável, o objetivo falha (o ambiente é
+avisado por `sem_plano`). O ambiente também pode decidir *quando* o objetivo começa (`objetivo`): no
+jogo da sorveteria o robô só começa `!g` depois dos comandos anteriores, e a falha de um comando sobe
+pelos objetivos até achar um com plano `-!` (como a pilha de intenções do Jason).

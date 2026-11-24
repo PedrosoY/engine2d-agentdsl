@@ -335,13 +335,79 @@ def test_percepcoes_so_mudancas_viram_eventos_e_pulsos():
     assert not corpo.ag.acredita("bateu")                        # pulso sai no quadro seguinte
 
 
-@pytest.mark.parametrize("jogo", ["arena", "torres"])
-def test_programas_dos_jogos_compilam_sem_avisos(jogo):
-    import importlib
+@pytest.mark.parametrize("projeto, agt", [("ProjetoArena", "arena.agt"), ("ProjetoTorres", "torres.agt"),
+                                          ("ProjetoExemplo", "inimigos.agt"),
+                                          ("ProjetoSorveteria", "fabrica.agt")])
+def test_programas_dos_projetos_compilam_sem_avisos(projeto, agt):
     from agentdsl.semantica import ACOES_ENGINE
-    mod = importlib.import_module(f"jogos.{jogo}.{jogo}")
-    raiz = Path(__file__).resolve().parent.parent
-    fonte = (raiz / "jogos" / jogo / f"{jogo}.agt").read_text(encoding="utf-8")
-    acoes = {**ACOES_ENGINE, **{n: a for n, (a, _) in mod.ACOES_JOGO.items()}}
-    sis = SistemaAgentes(fonte, acoes=acoes, percepcoes=mod.PERCEPCOES, alvos=mod.ALVOS)
-    assert not sis.avisos, sis.formatar_avisos()
+    from engine2d.projeto import ACOES_DSL, ALVOS_DSL, PERCEPCOES_DSL, Projeto, limpar_registros_dsl
+    raiz = Path(__file__).resolve().parent.parent / projeto
+    limpar_registros_dsl()
+    proj = Projeto(raiz)
+    proj.carregar_scripts()
+    try:
+        assert not proj.erros_scripts, proj.erros_scripts
+        fonte = (raiz / "Assets" / "Agentes" / agt).read_text(encoding="utf-8")
+        acoes = {**ACOES_ENGINE, **{n: a for n, (a, _) in ACOES_DSL.items()}}
+        sis = SistemaAgentes(fonte, acoes=acoes, percepcoes=dict(PERCEPCOES_DSL), alvos=tuple(ALVOS_DSL))
+        assert not sis.avisos, sis.formatar_avisos()
+    finally:
+        proj.descarregar()
+
+
+def test_negacao_aceita_variavel_anonima():
+    fonte = """agente a {
+        ok.
+        +ok : nao carregando(_X) <- +livre.
+        +ok : nao carregando(Y) <- +livre.
+    }"""
+    with pytest.raises(ErroCompilacao) as e:
+        SistemaAgentes(fonte)
+    assert "'Y'" in str(e.value) and "'_X'" not in str(e.value)
+    sis = SistemaAgentes(fonte.replace("+ok : nao carregando(Y) <- +livre.", ""))
+    sis.iniciar()
+    sis.executar_ate_estabilizar()
+    assert sis.agentes["a"].acredita("livre")
+
+
+def test_objetivos_estilo_agentspeak():
+    """+!g declara como alcançar um objetivo, !g persegue, -!g trata a falha."""
+    from agentdsl.semantica import Assinatura
+    from agentdsl import AmbienteRegistro
+    fonte = """agente a {
+        comecar.
+        +comecar <- !produzir(2).
+        +!produzir(N) : N > 0 <- passo(N); !produzir(N - 1).
+        +!produzir(0) <- passo(99).
+    }"""
+    amb = AmbienteRegistro()
+    sis = SistemaAgentes(fonte, ambiente=amb, acoes={"passo": Assinatura(("num",))})
+    sis.iniciar()
+    sis.executar_ate_estabilizar()
+    assert [a[2] for a in amb.acoes] == [(2,), (1,), (99,)]
+    with pytest.raises(ErroCompilacao) as e:
+        SistemaAgentes("agente b { x. +x <- !produzr. +!produzir <- y. }", acoes={"y": Assinatura(())})
+    assert "quis dizer '!produzir'" in str(e.value)
+    toks, erros = tokenizar("+!g <- !h. -!g <- x != y.")
+    assert not erros and [t.tipo for t in toks].count("EXCLAMACAO") == 3
+
+
+@pytest.mark.parametrize("arquivo", ["1_tutorial", "2_pedidos", "3_atendente_robo1", "3_sorveteiro_robo2",
+                                     "4_linha_robo1", "4_linha_robo2", "5_gerente"])
+def test_solucoes_da_sorveteria_compilam(arquivo):
+    """As soluções são o conteúdo de UMA janela do jogo: o jogo embrulha em modelo/agente."""
+    from agentdsl.semantica import ACOES_ENGINE
+    from engine2d.projeto import ACOES_DSL, ALVOS_DSL, PERCEPCOES_DSL, Projeto, limpar_registros_dsl
+    raiz = Path(__file__).resolve().parent.parent / "ProjetoSorveteria"
+    limpar_registros_dsl()
+    proj = Projeto(raiz)
+    proj.carregar_scripts()
+    try:
+        texto = (raiz / "Solucoes" / f"{arquivo}.agt").read_text(encoding="utf-8")
+        cab = "agente gerente {" if arquivo == "5_gerente" else "modelo todos {"
+        acoes = {**ACOES_ENGINE, **{n: a for n, (a, _) in ACOES_DSL.items()}}
+        sis = SistemaAgentes(cab + "\n" + texto + "\n}", acoes=acoes, percepcoes=dict(PERCEPCOES_DSL),
+                             alvos=tuple(ALVOS_DSL))
+        assert not sis.avisos, sis.formatar_avisos()
+    finally:
+        proj.descarregar()

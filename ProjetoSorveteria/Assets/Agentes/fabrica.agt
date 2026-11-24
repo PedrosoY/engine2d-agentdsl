@@ -1,0 +1,4 @@
+// Programa inicial (as janelas de código do jogo substituem este arquivo).
+modelo todos {
+    +!comecar <- dancar.
+}

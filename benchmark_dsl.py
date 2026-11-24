@@ -127,7 +127,7 @@ def _bloco(fonte, cabecalho):
 
 
 def concisao():
-    fonte = (RAIZ / "jogos" / "arena" / "arena.agt").read_text(encoding="utf-8")
+    fonte = (RAIZ / "ProjetoArena" / "Assets" / "Agentes" / "arena.agt").read_text(encoding="utf-8")
     trecho = _bloco(fonte, "modelo zumbi ") + "\n" + _bloco(fonte, "modelo atirador ")
     linhas_dsl = [l for l in trecho.splitlines() if l.strip() and not l.strip().startswith("//")]
     toks_dsl = len(Lexer(trecho).tokens()) - 1

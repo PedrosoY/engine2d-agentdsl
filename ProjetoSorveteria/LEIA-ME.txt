@@ -1,0 +1,36 @@
+FÁBRICA DE SORVETE (jogo de programação: The Farmer Was Replaced + Papa's Freezeria)
+
+Você começa com a fábrica vazia: um robô e o armazém de casquinhas. Não dá para controlar o robô
+direto: você escreve o PROGRAMA dele (AgentDSL) em janelas de código flutuantes e aperta Executar.
+O tutorial (janela Informação) ensina a sintaxe: pegar e devolver uma casquinha, tratar falhas com
+objetivos (+!g / -!g) e montar o primeiro sorvete.
+
+Um sorvete passa por etapas, como no Papa's Freezeria:
+  casquinha (tamanho) -> sorvete (creme/chocolate/misto) -> massa -> bater (pouco/medio/bem)
+  -> calda -> coberturas -> entregar
+Cada etapa pode FALHAR (a casquinha quebra, o sorvete derrama, passa do ponto...). O cliente paga
+pela nota: quanto mais o sorvete se parece com o pedido, mais ele paga.
+
+Na Árvore (T) você compra estações, opções do cardápio, partes da linguagem (condições, variáveis,
+operadores, memória, relógio, comunicação, gerente), mais robôs e bancadas. Com várias janelas,
+cada robô pode ter seu próprio programa e eles passam o sorvete um para o outro (multiagente).
+
+Teclas: Ctrl+Enter executa a janela · T árvore · F1 comandos e erros comuns · Esc fecha
+Editor: autocompletar (Tab/Enter, setas, Ctrl+Espaço) e quebra de linha automática.
+Atalhos do VS Code: Ctrl+A, Shift/Ctrl+Shift+setas, mouse (arrastar, 2/3 cliques), Ctrl+C/X/V,
+Ctrl+Z/Y, Ctrl+D, Ctrl+L, Alt+setas, Ctrl+Shift+K, Ctrl+/, Tab/Shift+Tab, Ctrl+F (lista completa no F1).
+Janelas: arraste pela barra e redimensione puxando qualquer borda.
+Progresso salvo em Saves/progresso.json (menu ≡ > Recomeçar do zero).
+
+Onde está cada coisa:
+- Assets/Scripts/Itens.py        -> cardápio, preços e as percepções que a DSL conhece
+- Assets/Scripts/Robo.py         -> fila de comandos, objetivos (pilha), falhas, bancadas, avisar
+- Assets/Scripts/Fabrica.py      -> clientes, pedidos, nota, árvore, salvamento, HUD
+- Assets/Scripts/Desbloqueios.py -> árvore, verificação da AST (recursos bloqueados), tela F1
+- Assets/Scripts/Erros.py        -> mensagens amigáveis para os erros comuns
+- Assets/Scripts/Painel.py       -> janelas, compilação das janelas, telas (início, árvore...)
+- Assets/Scripts/Janelas.py      -> janelas flutuantes (arrastar, redimensionar, minimizar)
+- Assets/Scripts/Tutorial.py     -> passos do tutorial
+- Solucoes/                      -> programas prontos (spoiler!)
+
+Sprites: Kenney (Tiny Factory e Pixel Platformer Food Expansion), licença CC0.

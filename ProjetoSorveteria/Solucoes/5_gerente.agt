@@ -1,0 +1,6 @@
+// Fase 5 (Gerência): janela do gerente. Compra sozinho, na ordem.
++dinheiro(D) : preco(manutencao, P) & D >= P <- comprar(manutencao).
++dinheiro(D) : preco(marketing, P) & D >= P <- comprar(marketing).
++dinheiro(D) : preco(velocidade, P) & D >= P <- comprar(velocidade).
++dinheiro(D) : preco(robos, P) & D >= P + 100 <- comprar(robos).
++dinheiro(D) : preco(franquia, P) & D >= P <- comprar(franquia).

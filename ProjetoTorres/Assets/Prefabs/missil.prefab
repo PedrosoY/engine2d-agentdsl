@@ -1,0 +1,37 @@
+{
+  "nome": "missil",
+  "tag": "torre",
+  "transform": {
+    "x": 0,
+    "y": 0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Torres/base_missil.png",
+        "camada": 3
+      }
+    },
+    {
+      "tipo": "Torre",
+      "campos": {
+        "tipo": "missil"
+      }
+    }
+  ],
+  "filhos": [
+    {
+      "nome": "torreta",
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Torres/torreta_missil.png",
+            "camada": 5
+          }
+        }
+      ]
+    }
+  ]
+}

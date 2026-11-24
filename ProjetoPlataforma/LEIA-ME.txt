@@ -1,0 +1,23 @@
+PULO VERDE — uma fase de plataforma feita na Engine2D
+=====================================================
+
+Jogar:   python rodar.py ProjetoPlataforma      (tela cheia; --janela para abrir numa janela)
+Editar:  python editor.py ProjetoPlataforma
+
+Controles: A/D ou setas andam · Espaço, W ou seta para cima pulam (segure para pular mais alto)
+           P pausa · Esc menu · R joga de novo no fim
+
+Onde está cada coisa
+- Assets/Fases/fase1.mapa            a fase (edite no editor: clique num bloco na Scene e pinte com a Paleta
+                                     do Inspector; Shift apaga, Ctrl pega o bloco, Ctrl+Z desfaz)
+- Assets/Fases/fase1_decoracao.mapa  arbustos, placas e cercas (camada de desenho "Cenario", atrás)
+- Assets/Agentes/plataforma.agt      IA dos inimigos (slime, caracol, abelha, sapo), dos blocos "?" e
+                                     o agente "fase" (tempo e moedas) — AgentDSL
+- Assets/Scripts/                    Jogador, Inimigo (corpo que a DSL comanda), Objetos (bloco, moeda,
+                                     cogumelo, mola, checkpoint, bandeira, câmera), Hud, Menu, AcoesPlataforma
+- Assets/Prefabs/                    um prefab por letra do mapa (moeda, slime, bloco_moeda...)
+- projeto.json                       gravidade, camadas de desenho, tags e camadas que não colidem
+                                     (no editor: Editar → Configurações do projeto)
+
+Este projeto foi montado pelo editor com o robô: python montar_plataforma.py
+Arte e sons: Kenney — New Platformer Pack (CC0), ver Assets/Sprites/LICENCA_Kenney.txt

@@ -1,0 +1,37 @@
+{
+  "nome": "gelo",
+  "tag": "torre",
+  "transform": {
+    "x": 0,
+    "y": 0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Torres/base_gelo.png",
+        "camada": 3
+      }
+    },
+    {
+      "tipo": "Torre",
+      "campos": {
+        "tipo": "gelo"
+      }
+    }
+  ],
+  "filhos": [
+    {
+      "nome": "torreta",
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Torres/torreta_gelo.png",
+            "camada": 5
+          }
+        }
+      ]
+    }
+  ]
+}

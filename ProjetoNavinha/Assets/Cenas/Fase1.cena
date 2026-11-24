@@ -1,0 +1,460 @@
+{
+  "nome": "Fase1",
+  "objetos": [
+    {
+      "nome": "Câmera",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 450.0,
+        "y": 300.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "CameraPrincipal",
+          "campos": {
+            "zoom": 1.0,
+            "cor_fundo": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Fundo",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 450.0,
+        "y": 300.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "FundoRolante",
+          "campos": {
+            "imagem": "Assets/Sprites/Fundos/darkPurple.png",
+            "velocidade_x": 0.0,
+            "velocidade_y": -45.0,
+            "paralaxe": 0.0,
+            "repetir_x": true,
+            "repetir_y": true,
+            "largura": 900.0,
+            "altura": 600.0,
+            "escala": 1.0,
+            "camada_desenho": "Fundo",
+            "camada": -100,
+            "cor": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "receber_luz": true
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Estrelas",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 450.0,
+        "y": 640.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "EmissorParticulas",
+          "campos": {
+            "imagem": "Assets/Sprites/Efeitos/star3.png",
+            "rajada": 0,
+            "taxa": 7.0,
+            "emitindo": true,
+            "vida": 3.4,
+            "vida_variacao": 0.2,
+            "velocidade": 230.0,
+            "velocidade_variacao": 0.5,
+            "angulo": -90.0,
+            "espalhamento": 0.0,
+            "tamanho_inicial": 0.35,
+            "tamanho_final": 0.35,
+            "cor_inicial": [
+              1.0,
+              1.0,
+              1.0,
+              0.7
+            ],
+            "cor_final": [
+              1.0,
+              1.0,
+              1.0,
+              0.7
+            ],
+            "gravidade": 0.0,
+            "arrasto": 0.0,
+            "girar": 0.0,
+            "camada": -50,
+            "destruir_ao_fim": false,
+            "max_particulas": 300,
+            "area_largura": 900.0,
+            "area_altura": 0.0,
+            "camada_desenho": "Fundo",
+            "receber_luz": false,
+            "aditivo": true
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Luz ambiente",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 450.0,
+        "y": 300.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "Luz2D",
+          "campos": {
+            "tipo": "global",
+            "cor": [
+              0.55,
+              0.5,
+              0.9,
+              1.0
+            ],
+            "intensidade": 0.5,
+            "raio": 200.0,
+            "raio_interno": 0.0,
+            "angulo": 90.0,
+            "abertura": 60.0,
+            "sombras": false,
+            "piscar": 0.0,
+            "apagar_em": 0.0
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Jogador",
+      "tag": "jogador",
+      "ativo": true,
+      "transform": {
+        "x": 449.9999694824219,
+        "y": 80.30303955078125,
+        "rotacao": 0.0,
+        "escala_x": 0.5,
+        "escala_y": 0.5
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Naves/playerShip1_blue.png",
+            "cor": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "camada_desenho": "Padrao",
+            "ordem": 5,
+            "virar_x": false,
+            "virar_y": false,
+            "largura": 0.0,
+            "altura": 0.0,
+            "visivel": true,
+            "estatico": false,
+            "receber_luz": true,
+            "aditivo": false
+          }
+        },
+        {
+          "tipo": "Colisor",
+          "campos": {
+            "forma": "circulo",
+            "raio": 20.0,
+            "largura": 32.0,
+            "altura": 32.0,
+            "gatilho": true,
+            "so_por_cima": false,
+            "camada_fisica": "jogador",
+            "dx": 0.0,
+            "dy": 0.0
+          }
+        },
+        {
+          "tipo": "Jogador",
+          "campos": {
+            "velocidade": 330.0,
+            "vidas": 3,
+            "intervalo_tiro": 0.16,
+            "velocidade_tiro": 760.0,
+            "nivel_arma": 1,
+            "invencivel_ao_levar_dano": 2.0
+          }
+        },
+        {
+          "tipo": "Luz2D",
+          "campos": {
+            "tipo": "ponto",
+            "cor": [
+              0.55,
+              0.75,
+              1.0,
+              1.0
+            ],
+            "intensidade": 1.7,
+            "raio": 280.0,
+            "raio_interno": 0.1,
+            "angulo": 90.0,
+            "abertura": 60.0,
+            "sombras": true,
+            "piscar": 0.0,
+            "apagar_em": 0.0
+          }
+        }
+      ],
+      "filhos": [
+        {
+          "nome": "Fogo",
+          "tag": "",
+          "ativo": true,
+          "transform": {
+            "x": 0.0,
+            "y": -62.0,
+            "rotacao": 0.0,
+            "escala_x": 1.0,
+            "escala_y": 1.0
+          },
+          "componentes": [
+            {
+              "tipo": "EmissorParticulas",
+              "campos": {
+                "imagem": "Assets/Sprites/Efeitos/fire00.png",
+                "rajada": 0,
+                "taxa": 45.0,
+                "emitindo": true,
+                "vida": 0.22,
+                "vida_variacao": 0.3,
+                "velocidade": 150.0,
+                "velocidade_variacao": 0.3,
+                "angulo": -90.0,
+                "espalhamento": 18.0,
+                "tamanho_inicial": 0.7,
+                "tamanho_final": 0.1,
+                "cor_inicial": [
+                  1.0,
+                  0.85,
+                  0.4,
+                  1.0
+                ],
+                "cor_final": [
+                  1.0,
+                  0.2,
+                  0.0,
+                  0.0
+                ],
+                "gravidade": 0.0,
+                "arrasto": 0.0,
+                "girar": 0.0,
+                "camada": 4,
+                "destruir_ao_fim": false,
+                "max_particulas": 300,
+                "area_largura": 0.0,
+                "area_altura": 0.0,
+                "camada_desenho": "Padrao",
+                "receber_luz": false,
+                "aditivo": true
+              }
+            },
+            {
+              "tipo": "Luz2D",
+              "campos": {
+                "tipo": "ponto",
+                "cor": [
+                  1.0,
+                  0.55,
+                  0.2,
+                  1.0
+                ],
+                "intensidade": 0.9,
+                "raio": 110.0,
+                "raio_interno": 0.0,
+                "angulo": 90.0,
+                "abertura": 60.0,
+                "sombras": false,
+                "piscar": 0.4,
+                "apagar_em": 0.0
+              }
+            }
+          ],
+          "filhos": []
+        },
+        {
+          "nome": "Farol",
+          "tag": "",
+          "ativo": true,
+          "transform": {
+            "x": 0.0,
+            "y": 50.0,
+            "rotacao": 0.0,
+            "escala_x": 1.0,
+            "escala_y": 1.0
+          },
+          "componentes": [
+            {
+              "tipo": "Luz2D",
+              "campos": {
+                "tipo": "cone",
+                "cor": [
+                  0.95,
+                  0.95,
+                  1.0,
+                  1.0
+                ],
+                "intensidade": 2.6,
+                "raio": 560.0,
+                "raio_interno": 0.0,
+                "angulo": 90.0,
+                "abertura": 58.0,
+                "sombras": true,
+                "piscar": 0.0,
+                "apagar_em": 0.0
+              }
+            }
+          ],
+          "filhos": []
+        },
+        {
+          "nome": "Escudo",
+          "tag": "",
+          "ativo": false,
+          "transform": {
+            "x": 0.0,
+            "y": 0.0,
+            "rotacao": 0.0,
+            "escala_x": 1.1,
+            "escala_y": 1.1
+          },
+          "componentes": [
+            {
+              "tipo": "SpriteRenderer",
+              "campos": {
+                "imagem": "Assets/Sprites/Efeitos/shield1.png",
+                "cor": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "camada_desenho": "Padrao",
+                "ordem": 6,
+                "virar_x": false,
+                "virar_y": false,
+                "largura": 0.0,
+                "altura": 0.0,
+                "visivel": true,
+                "estatico": false,
+                "receber_luz": false,
+                "aditivo": true
+              }
+            }
+          ],
+          "filhos": []
+        }
+      ]
+    },
+    {
+      "nome": "HUD",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 450.0,
+        "y": 300.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "Hud",
+          "campos": {
+            "cena_menu": "Assets/Cenas/Menu.cena"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Agentes",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 450.0,
+        "y": 300.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "ServicoAgentes",
+          "campos": {
+            "arquivo": "Assets/Agentes/navinha.agt"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Regras",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 450.0,
+        "y": 300.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "CamadasFisica",
+          "campos": {
+            "ignorar": "tiro_jogador:tiro_jogador, tiro_inimigo:tiro_inimigo, tiro_jogador:tiro_inimigo, tiro_jogador:jogador, tiro_jogador:item, tiro_inimigo:inimigo, tiro_inimigo:item, inimigo:inimigo, inimigo:item, item:item"
+          }
+        },
+        {
+          "tipo": "Fase",
+          "campos": {
+            "musica": "",
+            "volume_musica": 0.4
+          }
+        }
+      ],
+      "filhos": []
+    }
+  ]
+}

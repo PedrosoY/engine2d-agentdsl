@@ -5,3 +5,9 @@ resultados/benchmark_log.txt
 erros.log
 cena_salva.json
 assets/_downloads/
+Library/
+
+# saves dos jogos e cópias antigas dos artigos
+Saves/
+artigos/*_overleaf/
+*.tmp

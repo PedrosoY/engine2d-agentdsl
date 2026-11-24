@@ -1,0 +1,72 @@
+{
+  "nome": "cogumelo",
+  "tag": "item",
+  "ativo": true,
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "rotacao": 0.0,
+    "escala_x": 1.0,
+    "escala_y": 1.0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Tiles/mushroom_red.png",
+        "cor": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "camada_desenho": "Padrao",
+        "ordem": 3,
+        "virar_x": false,
+        "virar_y": false,
+        "largura": 0.0,
+        "altura": 0.0,
+        "visivel": true,
+        "estatico": false
+      }
+    },
+    {
+      "tipo": "CorpoRigido",
+      "campos": {
+        "tipo": "dinamico",
+        "vx": 0.0,
+        "vy": 0.0,
+        "escala_gravidade": 1.0,
+        "arrasto": 0.0,
+        "massa": 1.0,
+        "elasticidade": 0.0,
+        "velocidade_maxima": 1400.0,
+        "congelar_x": false,
+        "congelar_y": false
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "forma": "caixa",
+        "raio": 16.0,
+        "largura": 44.0,
+        "altura": 44.0,
+        "gatilho": false,
+        "so_por_cima": false,
+        "camada_fisica": "item",
+        "dx": 0.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "tipo": "Coletavel",
+      "campos": {
+        "tipo": "cogumelo",
+        "quadros": "",
+        "velocidade": 120.0
+      }
+    }
+  ],
+  "filhos": []
+}

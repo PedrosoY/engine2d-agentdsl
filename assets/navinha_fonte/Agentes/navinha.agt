@@ -1,0 +1,113 @@
+// IA da navinha em AgentDSL.
+// Cada inimigo que nasce é uma instância de um modelo (o corpo vem do prefab de mesmo nome em
+// Assets/Prefabs). O agente único "diretor" decide as ondas.
+// Ações da navinha (AcoesNave.py): atirar, mirar, leque, anel, ir_para, descer_ate, investir,
+// inverter_x, quicar, cair, espalhar, explodir, soltar_item, invocar_em, formacao, avisar, tocar,
+// mostrar_vida, vitoria.  Percepções: atingido(D), chegou, jogador_lado(L), inimigos(N).
+
+// ---------------------------------------------------------------------------------------------
+// Base de todos os inimigos: vida, pontos e o que acontece quando leva tiro.
+modelo inimigo {
+    vida(1).
+    pontos(100).
+    item(6).                       // chance (%) de soltar um item ao morrer
+
+    +atingido(D) : vida(V) & V > D <- -+vida(V - D); piscar.
+    +atingido(_D) : item(C)        <- soltar_item(C); explodir.
+}
+
+// Batedor: desce em zigue-zague, começando para o lado onde está o jogador.
+modelo batedor : inimigo {
+    nasceu.
+    +nasceu : jogador_lado(esquerda) <- velocidade(-120, -150); temporizador(0.7, virar).
+    +nasceu                         <- velocidade(120, -150); temporizador(0.7, virar).
+    +virar <- -virar; inverter_x; temporizador(1.4, virar).
+}
+
+// Atirador: desce até uma altura, dá algumas rajadas em leque e vai embora.
+modelo atirador : inimigo {
+    vida(4).
+    pontos(300).
+    item(20).
+    rajadas(0).
+    nasceu.
+    +nasceu  <- descer_ate(430, 170).
+    +chegou  <- temporizador(0.4, atirar).
+    +atirar : rajadas(N) & N < 4 <- -atirar; -+rajadas(N + 1); leque(3, 36, 230); temporizador(1.1, atirar).
+    +atirar <- -atirar; velocidade(0, 120).
+}
+
+// Kamikaze: aparece devagar, mira e investe contra o jogador.
+modelo kamikaze : inimigo {
+    vida(2).
+    pontos(150).
+    nasceu.
+    +nasceu <- velocidade(0, -80); temporizador(1.0, mergulhar).
+    +mergulhar <- -mergulhar; cor(1, 0.55, 0.55); investir(400).
+}
+
+// Meteoro: cai girando; quando é destruído, quebra em duas pedrinhas.
+modelo meteoro : inimigo {
+    vida(4).
+    pontos(60).
+    item(0).
+    nasceu.
+    +nasceu <- girar(50); cair(100).
+    +atingido(D) : vida(V) & V <= D <- invocar_aqui(pedrinha, 2); explodir.
+}
+
+modelo pedrinha : inimigo {
+    pontos(30).
+    item(0).
+    nasceu.
+    +nasceu <- girar(180); espalhar(150).
+}
+
+// Chefe: três fases. Muda de ataque conforme a vida cai.
+modelo chefe : inimigo {
+    vida(90).
+    total(90).
+    pontos(5000).
+    fase(1).
+    nasceu.
+
+    +nasceu <- ir_para(450, 470, 70); mostrar_vida(90, 90).
+    +chegou <- velocidade(90, 0); quicar; temporizador(0.8, ataque).
+
+    +ataque : fase(1) <- -ataque; leque(5, 70, 210); temporizador(1.3, ataque).
+    +ataque : fase(2) <- -ataque; anel(14, 170); temporizador(0.9, ataque).
+    +ataque : fase(3) <- -ataque; anel(10, 220); mirar(320); temporizador(0.5, ataque).
+
+    +atingido(D) : vida(V) & total(T) & V > D <- -+vida(V - D); piscar; mostrar_vida(V - D, T).
+    +atingido(_D) <- mostrar_vida(0, 90); explodir; vitoria.
+
+    +vida(V) : fase(1) & V < 60 <- -+fase(2); avisar("O chefe ficou bravo!"); invocar_serie(batedor, 4, 0.5).
+    +vida(V) : fase(2) & V < 25 <- -+fase(3); avisar("Fúria!"); cor(1, 0.6, 0.6).
+}
+
+// ---------------------------------------------------------------------------------------------
+// O diretor: uma onda depois da outra. Cada onda solta os inimigos e, passado o tempo dela,
+// fica "esperando" a tela esvaziar para chamar a próxima.
+agente diretor {
+    onda(0).
+    comecou.
+
+    +comecou <- avisar("Prepare-se!"); temporizador(2.5, proxima).
+
+    +proxima : onda(N) <- -proxima; -+onda(N + 1).
+    // as duas ordens possíveis: a tela esvaziou depois do tempo, ou já estava vazia
+    +inimigos(0) : esperando <- -esperando; temporizador(1.2, proxima).
+    +esperando : inimigos(0)  <- -esperando; temporizador(1.2, proxima).
+
+    +onda(1) <- avisar("Onda 1"); invocar_serie(batedor, 6, 0.6); temporizador(4, esperando).
+    +onda(2) <- avisar("Onda 2"); formacao(atirador, 3, 660); temporizador(2, esperando).
+    +onda(3) <- avisar("Chuva de meteoros"); invocar_serie(meteoro, 6, 0.9); invocar_serie(batedor, 4, 1.2);
+                temporizador(6, esperando).
+    +onda(4) <- avisar("Kamikazes!"); invocar_serie(kamikaze, 7, 0.7); temporizador(5, esperando).
+    +onda(5) <- avisar("Onda 5"); formacao(atirador, 2, 660); invocar_serie(batedor, 8, 0.4);
+                temporizador(4, esperando).
+    +onda(6) <- avisar("Tudo junto"); invocar_serie(kamikaze, 5, 1.0); invocar_serie(meteoro, 4, 1.3);
+                formacao(atirador, 4, 680); temporizador(6, esperando).
+    +onda(7) <- avisar("Cuidado: o chefe!"); tocar(alerta); temporizador(2.5, chefe_vem).
+    +chefe_vem <- -chefe_vem; invocar_em(chefe, 450, 720).
+}

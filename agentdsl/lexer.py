@@ -9,7 +9,7 @@ Classes de tokens (expressões regulares equivalentes):
     VAR      [A-Z_][a-zA-Z0-9_]*
     NUM      [0-9]+ ("." [0-9]+)?
     TEXTO    '"' ( [^"\\\n] | '\\' . )* '"'
-    símbolos { } ( ) , . ; : & + - * / < > <= >= == != <- -+
+    símbolos { } ( ) , . ; : & + - * / < > <= >= == != <- -+ !
     comentários  // até o fim da linha,  /* ... */
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ SIMBOLOS_2 = {"<-": "SETA", "-+": "MENOS_MAIS", "<=": "MENOR_IGUAL", ">=": "MAIO
 SIMBOLOS_1 = {"{": "ABRE_CHAVE", "}": "FECHA_CHAVE", "(": "ABRE_PAR", ")": "FECHA_PAR",
               ",": "VIRGULA", ".": "PONTO", ";": "PONTO_VIRGULA", ":": "DOIS_PONTOS",
               "&": "E", "+": "MAIS", "-": "MENOS", "*": "VEZES", "/": "DIVIDIDO", "%": "RESTO",
-              "<": "MENOR", ">": "MAIOR"}
+              "<": "MENOR", ">": "MAIOR", "!": "EXCLAMACAO"}
 
 
 @dataclass(frozen=True)

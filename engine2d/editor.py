@@ -1,4 +1,4 @@
-"""Editor dentro do jogo (F1), inspirado no layout da Unity/Godot.
+"""Editor dentro do jogo (F1).
 
   ┌ barra: ▶/❚❚  Passo  Salvar  Carregar  Novo  Duplicar  Excluir   FPS…  ┐
   │ Hierarquia │            Cena (seleção, arrasto, gizmos)    │ Inspector │
@@ -70,7 +70,7 @@ class Editor:
             self.rodando = not self.rodando
         if ent.tecla_baixou("f6"):
             self.rodando, self.passo_unico = False, True
-        if ent.tecla_baixou("f") and self.selecionado:      # focar, como o F da Unity
+        if ent.tecla_baixou("f") and self.selecionado:      # F foca o objeto selecionado
             cam = self.motor.camera
             cam.x, cam.y = self.selecionado.transform.posicao_mundo
         if ent.tecla_baixou("g"):
@@ -240,7 +240,7 @@ class Editor:
     def desenhar(self, ui) -> None:
         m = self.motor
         if not self.ativo:
-            ui.texto(m.largura - 8, m.altura - 6, "F1: editor", 13, cor=(200, 200, 200), ancora="bottomright")
+            ui.texto(m.largura - 8, m.altura - 6, "F1: depurar", 13, cor=(200, 200, 200), ancora="bottomright")
             return
         self._gizmos(ui)
         self._barra(ui)
@@ -413,7 +413,7 @@ class Editor:
                       for px, py in ((-.5, -.5), (.5, -.5), (.5, .5), (-.5, .5))]
             pygame.draw.lines(ui.surface, CORES["destaque"], True, cantos, 2)
         x, y = ui.mundo_para_tela(*go.transform.posicao_mundo)
-        # eixos locais (vermelho = +x, verde = +y), como o gizmo de mover da Unity
+        # eixos locais (vermelho = +x, verde = +y)
         _, _, r, _, _ = go.transform.mundo()
         c, s = math.cos(math.radians(r)), math.sin(math.radians(r))
         ui.linha((x, y), (x + 40 * c, y - 40 * s), (230, 70, 70), 3)

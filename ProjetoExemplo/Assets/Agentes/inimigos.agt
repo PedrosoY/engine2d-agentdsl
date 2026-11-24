@@ -1,0 +1,37 @@
+// Comportamento dos inimigos em AgentDSL.
+// O objeto "Agentes" da cena tem o componente ServicoAgentes apontando para este arquivo.
+// invocar(zumbi, N) usa o prefab Assets/Prefabs/zumbi.prefab (mesmo nome do modelo).
+
+// Cada zumbi que nasce é uma instância deste modelo, com a própria vida.
+modelo zumbi {
+    nasceu.
+    vida(2).
+    pontos(1).
+
+    +nasceu <- perseguir(jogador, 70).
+
+    // A Bala.py gera +atingido(D) quando acerta.
+    +atingido(D) : vida(V) & V > D <- -+vida(V - D); piscar.
+    +atingido(_D) : pontos(P)      <- dar_pontos(P); morrer.
+}
+
+// Herança: o robô é um zumbi mais lento, mais resistente e que vale mais.
+modelo robo : zumbi {
+    vida(6).
+    pontos(5).
+    +nasceu <- perseguir(jogador, 45).
+}
+
+// O diretor decide as ondas (agente único: existe desde o começo).
+agente diretor {
+    comecou.
+    ondas(0).
+
+    +comecou <- temporizador(2, nova_onda).
+
+    +nova_onda : ondas(N) <- -nova_onda; -+ondas(N + 1); invocar(zumbi, 1 + N / 2);
+                             temporizador(5, nova_onda).
+
+    // A cada 4 ondas, um robô e um aviso na tela (avisar vem do script AcoesDSL.py).
+    +ondas(N) : N > 0 & N % 4 == 0 <- invocar(robo, 1); avisar("Um robô apareceu!").
+}

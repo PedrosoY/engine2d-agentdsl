@@ -1,70 +1,79 @@
-"""Menu principal: escolha o jogo.
+"""Menu para jogar os projetos prontos (sem abrir o editor).
 
     python jogar.py            # abre o menu
     python jogar.py arena      # direto na Arena dos Sobreviventes
     python jogar.py torres     # direto no Tower Defense
+    python jogar.py exemplo    # direto no projeto de exemplo
+    python jogar.py navinha    # direto na navinha
+
+Cada jogo é um projeto do editor (pasta Projeto*): para ver/alterar, use  python editor.py
 """
+import subprocess
 import sys
 from pathlib import Path
 
-RAIZ = Path(__file__).parent
+RAIZ = Path(__file__).resolve().parent
 sys.path.insert(0, str(RAIZ))
 
-from engine2d import Cena, Componente, SpriteRenderer  # noqa: E402
-from engine2d.ui import CORES  # noqa: E402
+PROJETOS = {
+    "arena": ("ProjetoArena", "Arena dos Sobreviventes", "estilo Vampire Survivors",
+              "Assets/Sprites/Personagens/jogador.png"),
+    "torres": ("ProjetoTorres", "Defesa da Base", "tower defense estilo Bloons",
+               "Assets/Sprites/Torres/torreta_missil.png"),
+    "sorveteria": ("ProjetoSorveteria", "Fábrica de Sorvete", "programe os robôs em AgentDSL",
+                   "Assets/Sprites/Itens/sorvete_misto.png"),
+    "navinha": ("ProjetoNavinha", "Navinha", "shoot 'em up com IA na DSL",
+                "Assets/Sprites/Naves/playerShip1_blue.png"),
+    "plataforma": ("ProjetoPlataforma", "Pulo Verde", "plataforma estilo Mario",
+                   "Assets/Sprites/Personagem/character_green_idle.png"),
+    "exemplo": ("ProjetoExemplo", "Coletor de Moedas", "projeto de exemplo (scripts + DSL)",
+                "Assets/Sprites/Personagens/jogador.png"),
+}
 
 
-class Menu(Componente):
-    def iniciar(self):
-        self.motor.sair_com_esc = True
-
-    def desenhar_ui(self, ui):
-        cx = ui.largura // 2
-        ui.texto(cx, 120, "Engine2D + AgentDSL", 44, ancora="center", negrito=True)
-        ui.texto(cx, 168, "dois jogos, uma engine, comportamentos escritos na DSL", 18, ancora="center",
-                 cor=(200, 200, 210))
-        jogos = [("Arena dos Sobreviventes", "estilo Vampire Survivors", "kenney_shooter/PNG/Survivor 1/survivor1_gun.png",
-                  "arena"),
-                 ("Defesa da Base", "tower defense estilo Bloons", "kenney_td/PNG/Default size/towerDefense_tile205.png",
-                  "torres")]
-        for i, (titulo, sub, img, chave) in enumerate(jogos):
-            r = (cx - 420 + i * 440, 230, 400, 300)
-            if ui.botao(r, ""):
-                self.motor.trocar_cena(fabrica(chave))
-            ui.desenhar_imagem(img, r[0] + 200, r[1] + 110, tamanho=120)
-            ui.texto(r[0] + 200, r[1] + 210, titulo, 26, ancora="center", negrito=True)
-            ui.texto(r[0] + 200, r[1] + 245, sub, 16, ancora="center", cor=(200, 200, 210))
-        ui.texto(cx, 580, "ESC sai · F1 abre o editor em qualquer cena", 15, ancora="center", cor=(170, 170, 180))
-        ui.texto(cx, 690, "Assets: Kenney (CC0) — kenney.nl", 13, ancora="center", cor=(130, 130, 140))
+def rodar_projeto(chave, esperar=False):
+    pasta = RAIZ / PROJETOS[chave][0]
+    cmd = [sys.executable, str(RAIZ / "rodar.py"), str(pasta)]
+    if esperar:
+        return subprocess.call(cmd)
+    subprocess.Popen(cmd)
 
 
-def fabrica(chave):
-    if chave == "arena":
-        from jogos.arena.arena import criar_cena
-    else:
-        from jogos.torres.torres import criar_cena
-    return criar_cena
+def menu():
+    from engine2d import Cena, Componente, Motor
+    from engine2d.ui import CORES
 
+    class Menu(Componente):
+        def desenhar_ui(self, ui):
+            cx = ui.largura // 2
+            ui.texto(cx, 100, "Engine2D + AgentDSL", 44, ancora="center", negrito=True)
+            ui.texto(cx, 148, "escolha um jogo (cada um é um projeto que também abre no editor)", 17,
+                     ancora="center", cor=(200, 200, 210))
+            n = len(PROJETOS)
+            por_linha = 3
+            for i, (chave, (pasta, titulo, sub, img)) in enumerate(PROJETOS.items()):
+                k = min(por_linha, n - (i // por_linha) * por_linha)        # cartões nesta linha
+                r = (cx - (k * 308 - 8) // 2 + (i % por_linha) * 308, 185 + (i // por_linha) * 250, 300, 235)
+                if ui.botao(r, ""):
+                    rodar_projeto(chave)
+                try:
+                    ui.desenhar_imagem(str(RAIZ / pasta / img), r[0] + 150, r[1] + 90, tamanho=110)
+                except Exception:
+                    pass
+                ui.texto(r[0] + 150, r[1] + 175, titulo, 22, ancora="center", negrito=True)
+                ui.texto(r[0] + 150, r[1] + 205, sub, 13, ancora="center", cor=(200, 200, 210))
+            ui.texto(cx, 680, "Para ver e mudar os jogos: python editor.py  ·  ESC sai", 15, ancora="center",
+                     cor=CORES["destaque"])
+            ui.texto(cx, 704, "Assets: Kenney (CC0) — kenney.nl", 13, ancora="center", cor=(130, 130, 140))
 
-def criar_menu() -> Cena:
+    motor = Motor(1280, 720, "Engine2D + AgentDSL", pasta_assets=RAIZ, editor=False, tela_cheia=True)
     cena = Cena("Menu")
-    for i in range(21):
-        for j in range(12):
-            cena.criar("t", i * 64, j * 64, componentes=[SpriteRenderer(
-                imagem="kenney_td/PNG/Default size/towerDefense_tile" + ("119" if (i + j) % 2 else "124") + ".png",
-                camada=0, cor=(0.45, 0.5, 0.55, 1))])
     cena.criar("Menu", componentes=[Menu()])
-    return cena
-
-
-def main(argv=None, max_quadros=None, captura=None):
-    from engine2d import Motor
-    argv = sys.argv[1:] if argv is None else argv
-    motor = Motor(1280, 720, "Engine2D + AgentDSL", pasta_assets=RAIZ / "assets")
-    cena = fabrica(argv[0])() if argv else criar_menu()
-    motor.executar(cena, max_quadros=max_quadros, captura=captura)
+    motor.executar(cena)
     motor.encerrar()
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        sys.exit(rodar_projeto(sys.argv[1], esperar=True))
+    menu()

@@ -1,0 +1,8 @@
+// Fase 4 (Bancadas + Relógio): LINHA DE PRODUÇÃO. Janela do robo1: faz a base e passa adiante.
++!base <- perguntar_pedido; !montar.
++!montar : pedido_tamanho(T) & pedido_sabor(S) <- pegar_casquinha(T); adicionar_sorvete(S); !massa.
++!massa : pedido_massa(M) <- adicionar_massa(M); !bater.
++!massa <- !bater.
++!bater : pedido_ponto(P) <- bater(P); deixar(bancada1); !base.
++!bater <- deixar(bancada1); !base.
+-!base <- jogar_fora; !base.

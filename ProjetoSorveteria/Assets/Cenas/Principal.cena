@@ -1,0 +1,396 @@
+{
+  "nome": "Principal",
+  "objetos": [
+    {
+      "nome": "Câmera",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 640.0,
+        "y": 360.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "CameraPrincipal",
+          "campos": {
+            "zoom": 1.0,
+            "cor_fundo": [
+              0.1,
+              0.09,
+              0.11,
+              1.0
+            ]
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Chão",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 640.0,
+        "y": 360.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Mapa/chao.png",
+            "camada": 0,
+            "estatico": true
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "armazem",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 110.0,
+        "y": 600.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/armazem.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "armazem",
+            "titulo": "Armazém"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "maquina",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 260.0,
+        "y": 600.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/maquina.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "maquina",
+            "titulo": "Máquina de sorvete"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "massas",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 410.0,
+        "y": 600.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/massas.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "massas",
+            "titulo": "Massas"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "batedeira",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 560.0,
+        "y": 600.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/batedeira.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "batedeira",
+            "titulo": "Batedeira"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "caldas",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 710.0,
+        "y": 600.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/caldas.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "caldas",
+            "titulo": "Caldas"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "coberturas",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 860.0,
+        "y": 600.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/coberturas.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "coberturas",
+            "titulo": "Coberturas"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "balcao",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 1020.0,
+        "y": 600.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/balcao.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "balcao",
+            "titulo": "Balcão"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "bancada1",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 330.0,
+        "y": 410.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/bancada.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "bancada1",
+            "titulo": "Bancada 1"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "bancada2",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 560.0,
+        "y": 410.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/bancada.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "bancada2",
+            "titulo": "Bancada 2"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "bancada3",
+      "tag": "",
+      "ativo": false,
+      "transform": {
+        "x": 790.0,
+        "y": 410.0,
+        "rotacao": 0.0,
+        "escala_x": 5.0,
+        "escala_y": 5.0
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Estacoes/bancada.png",
+            "camada": 2
+          }
+        },
+        {
+          "tipo": "Estacao",
+          "campos": {
+            "nome_dsl": "bancada3",
+            "titulo": "Bancada 3"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Agentes (DSL)",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 0.0,
+        "y": 0.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "ServicoAgentes",
+          "campos": {
+            "arquivo": "Assets/Agentes/fabrica.agt"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Fábrica",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 0.0,
+        "y": 0.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "Fabrica",
+          "campos": {
+            "dinheiro_inicial": 0,
+            "salvar": true
+          }
+        },
+        {
+          "tipo": "Painel",
+          "campos": {}
+        },
+        {
+          "tipo": "Tutorial",
+          "campos": {}
+        }
+      ],
+      "filhos": []
+    }
+  ]
+}

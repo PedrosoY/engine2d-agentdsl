@@ -1,0 +1,57 @@
+{
+  "nome": "moeda",
+  "tag": "item",
+  "ativo": true,
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "rotacao": 0.0,
+    "escala_x": 1.0,
+    "escala_y": 1.0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Tiles/coin_gold.png",
+        "cor": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "camada_desenho": "Padrao",
+        "ordem": 3,
+        "virar_x": false,
+        "virar_y": false,
+        "largura": 0.0,
+        "altura": 0.0,
+        "visivel": true,
+        "estatico": false
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "forma": "caixa",
+        "raio": 16.0,
+        "largura": 44.0,
+        "altura": 44.0,
+        "gatilho": true,
+        "so_por_cima": false,
+        "camada_fisica": "item",
+        "dx": 0.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "tipo": "Coletavel",
+      "campos": {
+        "tipo": "moeda",
+        "quadros": "Assets/Sprites/Tiles/coin_gold.png,Assets/Sprites/Tiles/coin_gold_side.png",
+        "velocidade": 120.0
+      }
+    }
+  ],
+  "filhos": []
+}

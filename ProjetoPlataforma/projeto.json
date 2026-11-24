@@ -1,0 +1,36 @@
+{
+  "nome": "Pulo Verde",
+  "cena_inicial": "Assets/Cenas/Menu.cena",
+  "largura": 960,
+  "altura": 540,
+  "camadas_desenho": [
+    "Fundo",
+    "Cenario",
+    "Padrao",
+    "Frente"
+  ],
+  "tags": [
+    "jogador",
+    "inimigo",
+    "chao",
+    "item",
+    "bloco",
+    "perigo"
+  ],
+  "gravidade": [
+    0.0,
+    -2000.0
+  ],
+  "colisoes_ignoradas": [
+    "toque:chao",
+    "toque:toque",
+    "toque:inimigo",
+    "toque:item",
+    "jogador:inimigo",
+    "inimigo:inimigo",
+    "inimigo:item",
+    "item:item",
+    "perigo:chao",
+    "perigo:inimigo"
+  ]
+}

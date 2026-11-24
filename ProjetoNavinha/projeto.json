@@ -1,0 +1,22 @@
+{
+  "nome": "Navinha",
+  "cena_inicial": "Assets/Cenas/Menu.cena",
+  "largura": 900,
+  "altura": 600,
+  "camadas_desenho": [
+    "Fundo",
+    "Padrao",
+    "Frente"
+  ],
+  "tags": [
+    "jogador",
+    "inimigo",
+    "item",
+    "tiro"
+  ],
+  "gravidade": [
+    0.0,
+    0.0
+  ],
+  "colisoes_ignoradas": []
+}

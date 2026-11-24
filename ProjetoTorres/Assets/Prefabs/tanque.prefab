@@ -1,0 +1,42 @@
+{
+  "nome": "tanque",
+  "tag": "inimigo",
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "escala_x": 0.9,
+    "escala_y": 0.9
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Inimigos/tanque.png",
+        "camada": 2
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "raio": 16,
+        "gatilho": true,
+        "camada_fisica": "inimigo"
+      }
+    },
+    {
+      "tipo": "SeguirCaminho",
+      "campos": {
+        "velocidade": 45
+      }
+    },
+    {
+      "tipo": "InimigoTD",
+      "campos": {}
+    },
+    {
+      "tipo": "Piscar",
+      "campos": {}
+    }
+  ],
+  "filhos": []
+}

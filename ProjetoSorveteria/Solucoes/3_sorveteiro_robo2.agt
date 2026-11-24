@@ -1,0 +1,5 @@
+// Fase 3: janela do robo2: monta cada pedido que recebe (+novo_pedido).
++!comecar <- dancar.
++novo_pedido <- !montar.
++!montar : pedido_sabor(S) <- pegar_casquinha; adicionar_sorvete(S); entregar.
+-!montar <- jogar_fora; !montar.

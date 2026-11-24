@@ -1,0 +1,43 @@
+{
+  "nome": "brutamontes",
+  "tag": "inimigo",
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "escala_x": 1.35,
+    "escala_y": 1.35
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Personagens/brutamontes.png",
+        "camada": 2
+      }
+    },
+    {
+      "tipo": "CorpoRigido",
+      "campos": {
+        "massa": 4
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "raio": 24,
+        "camada_fisica": "inimigo"
+      }
+    },
+    {
+      "tipo": "Inimigo",
+      "campos": {
+        "raio_toque": 24
+      }
+    },
+    {
+      "tipo": "Piscar",
+      "campos": {}
+    }
+  ],
+  "filhos": []
+}

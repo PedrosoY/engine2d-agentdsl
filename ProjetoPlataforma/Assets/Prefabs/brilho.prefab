@@ -1,0 +1,53 @@
+{
+  "nome": "brilho",
+  "tag": "",
+  "ativo": true,
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "rotacao": 0.0,
+    "escala_x": 1.0,
+    "escala_y": 1.0
+  },
+  "componentes": [
+    {
+      "tipo": "EmissorParticulas",
+      "campos": {
+        "imagem": "Assets/Sprites/Tiles/star.png",
+        "rajada": 8,
+        "taxa": 0.0,
+        "emitindo": false,
+        "vida": 0.4,
+        "vida_variacao": 0.3,
+        "velocidade": 140.0,
+        "velocidade_variacao": 0.5,
+        "angulo": 90.0,
+        "espalhamento": 360.0,
+        "tamanho_inicial": 0.45,
+        "tamanho_final": 0.05,
+        "cor_inicial": [
+          1.0,
+          0.95,
+          0.4,
+          1.0
+        ],
+        "cor_final": [
+          1.0,
+          0.95,
+          0.4,
+          0.0
+        ],
+        "gravidade": 0.0,
+        "arrasto": 0.0,
+        "girar": 300.0,
+        "camada": 5,
+        "destruir_ao_fim": true,
+        "max_particulas": 300,
+        "area_largura": 0.0,
+        "area_altura": 0.0,
+        "camada_desenho": "Frente"
+      }
+    }
+  ],
+  "filhos": []
+}

@@ -1,4 +1,4 @@
-"""Camada de interface em modo imediato (parecido com o OnGUI da Unity).
+"""Camada de interface em modo imediato.
 
 A cada quadro os componentes desenham textos, barras e botões numa Surface do
 pygame (CPU); no fim do quadro ela é enviada como UMA textura e desenhada por
@@ -37,10 +37,18 @@ class CamadaUI:
         self.sujo = False
         self._formato_gl = None
         self._sobreposicoes: list = []
+        self._tardias: list = []       # desenhadas depois da UI normal (janelas flutuantes), sem ser modal
         self._areas_anteriores: list = []
         self._modal_ativo = False      # havia janela modal no quadro anterior
         self._modal_proximo = False
         self._em_sobreposicao = False
+
+    def redimensionar(self, largura: int, altura: int) -> None:
+        self.largura, self.altura = largura, altura
+        self.surface = pygame.Surface((largura, altura), pygame.SRCALPHA)
+        self.textura.atualizar(np.zeros((altura, largura, 4), np.uint8))
+        self.sprite.largura, self.sprite.altura = largura, altura
+        self.sprite.x, self.sprite.y = largura / 2, altura / 2
 
     # --- ciclo -----------------------------------------------------------------
     def limpar(self) -> None:
@@ -72,6 +80,15 @@ class CamadaUI:
                            self._formato_gl, GL.GL_UNSIGNED_BYTE, dados)
         GL.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0)
 
+    def depois(self, funcao) -> None:
+        """Agenda ``funcao(ui)`` para desenhar depois da UI normal e antes das janelas modais."""
+        self._tardias.append(funcao)
+
+    def desenhar_tardias(self) -> None:
+        pend, self._tardias = self._tardias, []
+        for f in pend:
+            f(self)
+
     def sobrepor(self, funcao) -> None:
         """Agenda ``funcao(ui)`` para desenhar DEPOIS de todo o resto (janelas modais)."""
         self._sobreposicoes.append(funcao)
@@ -91,23 +108,42 @@ class CamadaUI:
         return any(r.collidepoint(mx, my) for r in self.areas_bloqueadas + self._areas_anteriores)
 
     # --- recursos ---------------------------------------------------------------
-    def fonte(self, tamanho: int = 18, negrito: bool = False) -> pygame.font.Font:
-        k = (tamanho, negrito)
+    def fonte(self, tamanho: int = 18, negrito: bool = False, arquivo: str | None = None) -> pygame.font.Font:
+        """Fonte do sistema (Segoe UI) ou um arquivo .ttf do projeto (``arquivo``)."""
+        k = (tamanho, negrito, arquivo or "")
         if k not in self._fontes:
-            self._fontes[k] = pygame.font.SysFont("segoeui,arial", tamanho, bold=negrito)
+            f = None
+            if arquivo:
+                p = Path(arquivo)
+                if not p.is_absolute() and self.motor.texturas.pasta_base:
+                    p = self.motor.texturas.pasta_base / p
+                try:
+                    f = pygame.font.Font(str(p), tamanho)
+                    f.set_bold(negrito)
+                except (OSError, pygame.error) as e:
+                    print(f"[ui] fonte '{arquivo}': {e}")
+            self._fontes[k] = f or pygame.font.SysFont("segoeui,arial", tamanho, bold=negrito)
         return self._fontes[k]
 
     def imagem(self, caminho: str, tamanho: int | None = None) -> pygame.Surface:
         k = (caminho, tamanho)
         if k not in self._imagens:
-            p = Path(caminho)
-            if not p.is_absolute() and self.motor.texturas.pasta_base:
-                p = self.motor.texturas.pasta_base / p
-            img = pygame.image.load(str(p)).convert_alpha()
+            from .textura import PREFIXO_EMBUTIDO, desenhar_forma
+            if str(caminho).startswith(PREFIXO_EMBUTIDO):      # sprite padrão da engine
+                px = desenhar_forma(str(caminho)[len(PREFIXO_EMBUTIDO):])
+                px = np.ascontiguousarray(px[::-1])
+                img = pygame.image.frombuffer(px.tobytes(), (px.shape[1], px.shape[0]), "RGBA").convert_alpha()
+            else:
+                p = Path(caminho)
+                if not p.is_absolute() and self.motor.texturas.pasta_base:
+                    p = self.motor.texturas.pasta_base / p
+                img = pygame.image.load(str(p)).convert_alpha()
             if tamanho:
                 w, h = img.get_size()
                 f = tamanho / max(w, h)
-                img = pygame.transform.smoothscale(img, (max(1, int(w * f)), max(1, int(h * f))))
+                novo = (max(1, int(w * f)), max(1, int(h * f)))
+                # pixel art (imagens pequenas) é ampliada sem borrar
+                img = pygame.transform.scale(img, novo) if max(w, h) <= 32 else pygame.transform.smoothscale(img, novo)
             self._imagens[k] = img
         return self._imagens[k]
 
@@ -132,20 +168,26 @@ class CamadaUI:
         return r
 
     def texto(self, x, y, texto, tamanho=18, cor=CORES["texto"], ancora="topleft", negrito=False,
-              sombra=True) -> pygame.Rect:
-        k = (texto, tamanho, cor, negrito)
+              sombra=True, fonte: str | None = None, alfa: int = 255) -> pygame.Rect:
+        k = (texto, tamanho, cor, negrito, fonte)
         surf = self._cache_texto.get(k)
         if surf is None:
-            surf = self.fonte(tamanho, negrito).render(str(texto), True, cor)
+            surf = self.fonte(tamanho, negrito, fonte).render(str(texto), True, cor[:3])
             self._cache_texto[k] = surf
         r = surf.get_rect(**{ancora: (int(x), int(y))})
         if sombra:
-            sk = (texto, tamanho, (0, 0, 0), negrito)
+            sk = (texto, tamanho, (0, 0, 0), negrito, fonte)
             s2 = self._cache_texto.get(sk)
             if s2 is None:
-                s2 = self.fonte(tamanho, negrito).render(str(texto), True, (0, 0, 0))
+                s2 = self.fonte(tamanho, negrito, fonte).render(str(texto), True, (0, 0, 0))
                 self._cache_texto[sk] = s2
+            if alfa < 255:
+                s2 = s2.copy()
+                s2.set_alpha(alfa)
             self.surface.blit(s2, r.move(1, 1))
+        if alfa < 255:
+            surf = surf.copy()
+            surf.set_alpha(alfa)
         self.surface.blit(surf, r)
         return r
 

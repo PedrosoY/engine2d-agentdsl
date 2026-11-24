@@ -1,0 +1,64 @@
+{
+  "nome": "bloco_moeda",
+  "tag": "bloco",
+  "ativo": true,
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "rotacao": 0.0,
+    "escala_x": 1.0,
+    "escala_y": 1.0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Tiles/block_coin.png",
+        "cor": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "camada_desenho": "Padrao",
+        "ordem": 0,
+        "virar_x": false,
+        "virar_y": false,
+        "largura": 0.0,
+        "altura": 0.0,
+        "visivel": true,
+        "estatico": false
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "forma": "caixa",
+        "raio": 16.0,
+        "largura": 64.0,
+        "altura": 64.0,
+        "gatilho": false,
+        "so_por_cima": false,
+        "camada_fisica": "chao",
+        "dx": 0.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "tipo": "Bloco",
+      "campos": {
+        "imagem_vazio": "Assets/Sprites/Tiles/block_empty.png"
+      }
+    },
+    {
+      "tipo": "ComportamentoAgente",
+      "campos": {
+        "modelo": "bloco_moeda",
+        "agente": "",
+        "olhar_movimento": false,
+        "frente_do_sprite": 0.0
+      }
+    }
+  ],
+  "filhos": []
+}

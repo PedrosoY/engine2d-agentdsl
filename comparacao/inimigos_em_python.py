@@ -1,4 +1,4 @@
-"""O MESMO comportamento dos modelos `zumbi` e `atirador` de jogos/arena/arena.agt, em Python puro.
+"""O MESMO comportamento dos modelos `zumbi` e `atirador` de ProjetoArena/Assets/Agentes/arena.agt, em Python puro.
 
 Serve para a avaliação "a DSL realmente simplifica a tarefa?" (item 5.1 do roteiro).
 Repare no que o programador precisa controlar à mão aqui e que a DSL faz sozinha:

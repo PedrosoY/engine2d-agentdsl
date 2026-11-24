@@ -61,6 +61,7 @@ class SimboloAgente:
     nome: str
     pos: Posicao | None
     crencas: dict = field(default_factory=dict)   # (nome, aridade) -> [tipos]
+    objetivos: set = field(default_factory=set)   # (nome, aridade) com plano +!nome
 
 
 class TabelaSimbolos:
@@ -193,6 +194,9 @@ class AnalisadorSemantico:
                     for arg, tipo in zip(a.args, self.acoes[a.nome].tipos):
                         if tipo == CRENCA and isinstance(arg, A.Atomo):
                             produzidas.add((arg.nome, 0))
+        # objetivos: cada plano +!g declara o objetivo g
+        sim.objetivos = {(p.evento.literal.nome, p.evento.literal.aridade) for p in ag.planos
+                         if p.evento.objetivo and p.evento.op == "+"}
         # 3) planos
         for p in ag.planos:
             self._plano(p, sim, produzidas)
@@ -219,7 +223,11 @@ class AnalisadorSemantico:
         t = self.tabela
         t.abrir_escopo()
         ev = p.evento.literal
-        if (ev.nome, ev.aridade) not in produzidas:
+        if p.evento.objetivo:
+            if p.evento.op == "-" and (ev.nome, ev.aridade) not in sim.objetivos:
+                self._aviso(f"'-!{ev.nome}' trata a falha de um objetivo que não tem plano '+!{ev.nome}'",
+                            p.evento.pos)
+        elif (ev.nome, ev.aridade) not in produzidas:
             self._aviso(f"o evento '{p.evento}' nunca será gerado: a crença '{ev.nome}/{ev.aridade}' "
                         f"não é inicial, não é percepção do ambiente e nenhum plano a adiciona", p.evento.pos)
         # O evento liga as variáveis que aparecem nele.
@@ -228,8 +236,9 @@ class AnalisadorSemantico:
         for cond in p.contexto:
             if isinstance(cond, A.CondLiteral):
                 if cond.negado:
-                    # Negação por falha: só é segura com variáveis já ligadas.
-                    self._usar_vars(cond.literal, "na negação 'nao'")
+                    # Negação por falha: só é segura com variáveis já ligadas. A exceção são as
+                    # anônimas (_X): "nao carregando(_X)" = não há nenhuma crença carregando(...).
+                    self._usar_vars(cond.literal, "na negação 'nao'", anonimas_livres=True)
                     self._checar_tipos_literal(cond.literal, sim)
                 else:
                     self._ligar_literal(cond.literal, sim)
@@ -246,7 +255,13 @@ class AnalisadorSemantico:
                                 f"{'falsa' if cond.op == '==' else 'verdadeira'}", cond.pos)
 
         for a in p.acoes:
-            if isinstance(a, A.AcaoCrenca):
+            if isinstance(a, A.AcaoObjetivo):
+                self._usar_vars(a.literal, f"em '!{a.literal.nome}'")
+                if (a.literal.nome, a.literal.aridade) not in sim.objetivos:
+                    sug = self._parecida(a.literal.nome, {n for n, _ in sim.objetivos})
+                    self._erro(f"o objetivo '!{a.literal.nome}' não tem nenhum plano '+!{a.literal.nome}'"
+                               + (f" (quis dizer '!{sug}'?)" if sug else ""), a.pos)
+            elif isinstance(a, A.AcaoCrenca):
                 self._usar_vars(a.literal, f"em '{a.op}{a.literal.nome}'")
                 tipos = [self._tipo_expr(x) for x in a.literal.args]
                 self._registrar_crenca(sim, a.literal, tipos)
@@ -319,9 +334,11 @@ class AnalisadorSemantico:
                            arg.pos or a.pos)
 
     # --- expressões ---------------------------------------------------------
-    def _usar_vars(self, no, onde: str):
+    def _usar_vars(self, no, onde: str, anonimas_livres: bool = False):
         """Toda variável usada precisa estar ligada antes (regra de escopo)."""
         for v in self._variaveis(no):
+            if anonimas_livres and v.nome.startswith("_") and self.tabela.buscar_var(v.nome) is None:
+                continue
             info = self.tabela.buscar_var(v.nome)
             if info is None:
                 self._erro(f"variável '{v.nome}' usada {onde} sem estar ligada no evento ou no contexto", v.pos)

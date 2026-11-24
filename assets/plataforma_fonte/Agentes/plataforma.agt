@@ -1,0 +1,72 @@
+// IA do jogo de plataforma em AgentDSL.
+// Os inimigos e os blocos "?" vêm do mapa da fase (letras e, c, a, p, ?, !); cada prefab tem um
+// ComportamentoAgente com o modelo de mesmo nome. O agente único "fase" cuida do tempo e das moedas.
+// Ações do jogo (AcoesPlataforma.py): andar, virar, parar, patrulhar_voando, pular_para_jogador,
+// animacao, achatar, quicar_bloco, esvaziar, soltar, tocar, avisar, ganhar_vida, acabou_o_tempo.
+// Percepções: ativado, no_chao, jogador_lado(L), jogador_perto, tempo(N), moedas(N).
+// Eventos: +parede_a_frente, +buraco_a_frente, +pisado, +batido.
+
+// ---------------------------------------------------------------------------------------------
+// Base dos inimigos: quando o jogador pisa, achata e dá os pontos.
+modelo inimigo {
+    pontos(100).
+    +pisado <- tocar(pisao); achatar.
+}
+
+// Slime: anda e vira quando encontra parede ou buraco (não cai das plataformas).
+modelo slime : inimigo {
+    +ativado <- animacao(andar); andar(esquerda, 70).
+    +parede_a_frente <- virar.
+    +buraco_a_frente <- virar.
+}
+
+// Caracol: o primeiro pisão faz ele se esconder na concha; um tempo depois ele sai e volta a andar.
+// Pisar de novo enquanto está na concha derrota o caracol.
+modelo caracol : inimigo {
+    pontos(200).
+    +ativado <- animacao(andar); andar(esquerda, 45).
+    +parede_a_frente : nao na_concha <- virar.
+    +buraco_a_frente : nao na_concha <- virar.
+    +pisado : nao na_concha <- +na_concha; parar; animacao(concha); tocar(batida); temporizador(4, sair).
+    +sair : na_concha <- -sair; -na_concha; animacao(andar); andar(esquerda, 45).
+}
+
+// Abelha: voa de um lado para o outro, sem ligar para a gravidade.
+modelo abelha : inimigo {
+    pontos(150).
+    +ativado <- animacao(voar); patrulhar_voando(150, 80).
+}
+
+// Sapo: espera e, quando o jogador chega perto, pula na direção dele.
+modelo sapo : inimigo {
+    pontos(200).
+    +ativado <- animacao(parado); temporizador(1.0, pular).
+    +pular : jogador_perto & no_chao <- -pular; animacao(pulo); pular_para_jogador(240, 780); temporizador(1.7, pular).
+    +pular <- -pular; temporizador(0.4, pular).
+    +no_chao <- animacao(parado).
+}
+
+// ---------------------------------------------------------------------------------------------
+// Blocos "?": também são agentes. Batido por baixo, decide o que sai.
+modelo bloco_moeda {
+    moedas(1).
+    +batido : moedas(N) & N > 0 <- -+moedas(N - 1); quicar_bloco; soltar(moeda_bloco).
+    +batido <- quicar_bloco; tocar(batida).
+    +moedas(0) <- esvaziar.
+}
+
+modelo bloco_cogumelo {
+    cheio.
+    +batido : cheio <- -cheio; quicar_bloco; soltar(cogumelo); tocar(aparece); esvaziar.
+    +batido <- quicar_bloco; tocar(batida).
+}
+
+// ---------------------------------------------------------------------------------------------
+// A fase: avisos de tempo e vida extra a cada 20 moedas.
+agente fase {
+    comecou.
+    +comecou <- avisar("Fase 1").
+    +tempo(100) <- avisar("Corra! Faltam 100 segundos"); tocar(alerta).
+    +tempo(0) <- avisar("O tempo acabou!"); acabou_o_tempo.
+    +moedas(N) : N > 0 & N % 20 == 0 <- ganhar_vida; avisar("20 moedas: vida extra!").
+}

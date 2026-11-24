@@ -1,0 +1,37 @@
+# Fase 1 — mapa principal. Cada letra é uma célula de 64 px; '.' é vazio.
+# letra = imagem [solido] [so_por_cima]   ou   letra = prefab arquivo.prefab
+G = Assets/Sprites/Tiles/terrain_grass_block_top.png solido
+[ = Assets/Sprites/Tiles/terrain_grass_block_top_left.png solido
+] = Assets/Sprites/Tiles/terrain_grass_block_top_right.png solido
+D = Assets/Sprites/Tiles/terrain_grass_block_center.png solido
+( = Assets/Sprites/Tiles/terrain_grass_block_left.png solido
+) = Assets/Sprites/Tiles/terrain_grass_block_right.png solido
+S = Assets/Sprites/Tiles/terrain_stone_block.png solido
+B = Assets/Sprites/Tiles/bricks_brown.png solido
+n = Assets/Sprites/Tiles/terrain_grass_cloud_middle.png so_por_cima
+< = Assets/Sprites/Tiles/terrain_grass_cloud_left.png so_por_cima
+> = Assets/Sprites/Tiles/terrain_grass_cloud_right.png so_por_cima
+o = prefab Assets/Prefabs/moeda.prefab
+? = prefab Assets/Prefabs/bloco_moeda.prefab
+! = prefab Assets/Prefabs/bloco_cogumelo.prefab
+e = prefab Assets/Prefabs/slime.prefab
+c = prefab Assets/Prefabs/caracol.prefab
+a = prefab Assets/Prefabs/abelha.prefab
+p = prefab Assets/Prefabs/sapo.prefab
+^ = prefab Assets/Prefabs/espinhos.prefab
+M = prefab Assets/Prefabs/mola.prefab
+K = prefab Assets/Prefabs/checkpoint.prefab
+F = prefab Assets/Prefabs/bandeira.prefab
+---
+......................................................................................................................................................
+....................................................................oooo..............................................................................
+...................................................ooo...................................................ooo..........................................
+.............................................................................................................ooo....................SS................
+...................................ooo................................................ooooo..........ooo..a........................SSS................
+........ooo....................o..<nnn>..........B?B!B?B.......a.........................................<n>...........?B?........SSSS................
+............B?B?B..............S...........o............................................p....................<n>.................SSSSS................
+..............................SS..........<n>.......................................[GGGGGGGG].......<n>........................SSSSSS................
+...................e.........SSS....c.....................e..e....^^.M........K.....(DDDDDDDD)..c.....................e..e..c..SSSSSSS.......F........
+[GGGGGGGGGGGGGGGGGGGG]..[GGGGGGGGGGGGGGGG]...[GGGGGGGGGGGGGGGGGGGGGGGG]...[GGGGGGGGGDDDDDDDDDDGGGGG]..............[GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG]
+(DDDDDDDDDDDDDDDDDDDD)..(DDDDDDDDDDDDDDDD)...(DDDDDDDDDDDDDDDDDDDDDDDD)...(DDDDDDDDDDDDDDDDDDDDDDDD)..............(DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD)
+(DDDDDDDDDDDDDDDDDDDD)..(DDDDDDDDDDDDDDDD)...(DDDDDDDDDDDDDDDDDDDDDDDD)...(DDDDDDDDDDDDDDDDDDDDDDDD)..............(DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD)

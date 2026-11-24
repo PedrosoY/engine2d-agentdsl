@@ -6,7 +6,7 @@
     python -m agentdsl verificar  arquivo.agt   # léxico + sintático + semântico
     python -m agentdsl executar   arquivo.agt [--passos N] [--perceber agente:crenca ...]
                                                 # roda sem gráficos e mostra crenças/ações
-    python -m agentdsl jogo       arquivo.agt   # abre o jogo correspondente (arena/torres)
+    python -m agentdsl jogo       arquivo.agt   # roda o projeto onde o .agt está
 """
 from __future__ import annotations
 
@@ -23,10 +23,24 @@ from .semantica import AnalisadorSemantico
 
 
 def _percepcoes_jogo(caminho: Path):
-    """Contrato do jogo (ações, percepções, alvos): procura um .py com o mesmo nome do .agt
-    (ex.: jogos/arena/arena.agt → jogos/arena/arena.py) que defina ACOES_JOGO e PERCEPCOES."""
+    """Contrato do jogo (ações, percepções, alvos).
+
+    Se o .agt está dentro de um projeto (pasta com projeto.json), carrega os scripts do projeto
+    e usa o que eles declararam com @acao_dsl / percepcao_dsl / alvo_dsl. Senão, procura um .py
+    com o mesmo nome do .agt que defina ACOES_JOGO e PERCEPCOES."""
     import importlib
     raiz = Path(__file__).resolve().parent.parent
+    for pasta in caminho.resolve().parents:
+        if (pasta / "projeto.json").exists():
+            sys.path.insert(0, str(raiz))
+            from engine2d.projeto import ACOES_DSL, ALVOS_DSL, PERCEPCOES_DSL, Projeto
+            from .semantica import ACOES_ENGINE
+            proj = Projeto(pasta)
+            proj.carregar_scripts()
+            for erro in proj.erros_scripts:
+                print("(aviso: erro no script", erro + ")")
+            acoes = {n: a for n, (a, _) in ACOES_DSL.items()}
+            return dict(PERCEPCOES_DSL), {**ACOES_ENGINE, **acoes}, tuple(ALVOS_DSL)
     py = caminho.resolve().with_suffix(".py")
     if not py.exists():
         return {}, None, ()
@@ -76,9 +90,12 @@ def main(argv=None) -> int:
 
     if args.comando == "jogo":
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-        import jogar
-        jogar.main([caminho.stem])
-        return 0
+        import rodar
+        projeto = next((p for p in caminho.resolve().parents if (p / "projeto.json").exists()), None)
+        if projeto is None:
+            print("Este .agt não está dentro de um projeto (pasta com projeto.json).", file=sys.stderr)
+            return 1
+        return rodar.main([str(projeto)])
 
     prog, erros = analisar(fonte)
     if erros:

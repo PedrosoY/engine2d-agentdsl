@@ -1,0 +1,37 @@
+{
+  "nome": "zumbi",
+  "tag": "inimigo",
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "escala_x": 1.0,
+    "escala_y": 1.0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Personagens/zumbi.png",
+        "camada": 3
+      }
+    },
+    {
+      "tipo": "CorpoRigido",
+      "campos": {
+        "massa": 1
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "raio": 18,
+        "camada_fisica": "inimigo"
+      }
+    },
+    {
+      "tipo": "Piscar",
+      "campos": {}
+    }
+  ],
+  "filhos": []
+}

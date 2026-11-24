@@ -136,11 +136,12 @@ class Parser:
         self._esperar("PONTO", f"no fim da crença '{lit}'")
         return lit
 
-    # plano = evento [":" contexto] "<-" corpo "."
+    # plano = ("+" | "-") ["!"] literal [":" contexto] "<-" corpo "."
     def plano(self) -> A.Plano:
         sinal = self._consumir()
+        objetivo = bool(self._ver("EXCLAMACAO") and self._consumir())
         lit = self.literal()
-        p = A.Plano(A.Evento(sinal.lexema, lit, sinal.pos), pos=sinal.pos)
+        p = A.Plano(A.Evento(sinal.lexema, lit, sinal.pos, objetivo=objetivo), pos=sinal.pos)
         if self._ver("DOIS_PONTOS"):
             self._consumir()
             p.contexto = self.contexto()
@@ -195,6 +196,9 @@ class Parser:
         if self._ver("MAIS", "MENOS", "MENOS_MAIS"):
             self._consumir()
             return A.AcaoCrenca(t.lexema, self.literal(), t.pos)
+        if self._ver("EXCLAMACAO"):
+            self._consumir()
+            return A.AcaoObjetivo(self.literal(), t.pos)
         if self._ver("IDENT"):
             lit = self.literal()
             return A.AcaoExterna(lit.nome, lit.args, t.pos)

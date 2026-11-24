@@ -1,0 +1,13 @@
+DEFESA DA BASE (tower defense estilo Bloons TD)
+
+Compre torres no painel da direita (ou teclas 1-4) e clique no mapa. Clique numa torre para
+melhorar ou vender. ESPAÇO inicia a próxima onda. Sobreviva às 15 ondas. ESC pausa.
+
+Onde está cada coisa:
+- Assets/Agentes/torres.agt    -> TODO o comportamento: inimigos (que se dividem ao morrer),
+                                  torres e suas melhorias, e as 15 ondas (AgentDSL)
+- Assets/Scripts/Mapa.py       -> grade e caminho dos inimigos
+- Assets/Scripts/Inimigos.py   -> andar pelo caminho, barra de vida, percepções
+- Assets/Scripts/Torres.py     -> torre, projéteis e a ação atirar(...) da DSL
+- Assets/Scripts/GerenteTD.py  -> loja, dinheiro, vidas, ondas e painel
+- Assets/Prefabs/*.prefab      -> um prefab por inimigo e por torre (mesmo nome do modelo no .agt)

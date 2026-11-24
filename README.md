@@ -4,18 +4,19 @@ Projeto único para duas disciplinas de Engenharia de Computação (FHO):
 
 | Disciplina | Parte do projeto | Onde está |
 |---|---|---|
-| **Computação Gráfica** | Engine 2D em Python + OpenGL 3.3 com arquitetura no estilo Unity/Godot: GameObjects, componentes, hierarquia de transformações, física com grade espacial, câmera, UI, **editor dentro do jogo**, renderização em lote/atlas e **view frustum culling** | `engine2d/`, `demo_engine.py`, `benchmark_engine.py` |
-| **Teoria da Computação e Compiladores** | AgentDSL: linguagem orientada a eventos inspirada em AgentSpeak/Jason (crenças → eventos → planos → ações), com lexer, parser LL(1), análise semântica com tipos e interpretador. Controla os inimigos, torres, armas e ondas dos jogos | `agentdsl/`, `GRAMATICA.md`, `jogos/*/*.agt`, `benchmark_dsl.py` |
+| **Computação Gráfica** | Engine 2D em Python + OpenGL 3.3 com GameObjects e componentes: GameObjects, componentes, hierarquia de transformações, física com grade espacial, câmera, UI, **editor dentro do jogo**, renderização em lote/atlas e **view frustum culling** | `engine2d/`, `demo_engine.py`, `benchmark_engine.py` |
+| **Teoria da Computação e Compiladores** | AgentDSL: linguagem orientada a eventos inspirada em AgentSpeak/Jason (crenças → eventos → planos → ações), com lexer, parser LL(1), análise semântica com tipos e interpretador. Controla os inimigos, torres, armas e ondas dos jogos | `agentdsl/`, `GRAMATICA.md`, `Projeto*/Assets/Agentes/*.agt`, `benchmark_dsl.py` |
 
-Dois jogos completos mostram as duas partes funcionando juntas:
+Três jogos completos mostram as duas partes funcionando juntas:
 
 | Jogo | Estilo | Comportamento em DSL |
 |---|---|---|
-| **Arena dos Sobreviventes** (`jogos/arena`) | Vampire Survivors | 5 tipos de inimigo (com herança), chefe com 2 fases, 3 armas que sobem de nível, 2 "diretores" de ondas |
-| **Defesa da Base** (`jogos/torres`) | Bloons TD | 7 inimigos que se dividem ao morrer (tanque → soldados), 4 torres com 3 níveis de melhoria, 15 ondas + modo infinito |
+| **Arena dos Sobreviventes** (`ProjetoArena/`) | Vampire Survivors | 5 tipos de inimigo (com herança), chefe com 2 fases, 3 armas que sobem de nível, 2 "diretores" de ondas |
+| **Defesa da Base** (`ProjetoTorres/`) | Bloons TD | 7 inimigos que se dividem ao morrer (tanque → soldados), 4 torres com 3 níveis de melhoria, 15 ondas + modo infinito |
+| **Fábrica de Sorvete** (`ProjetoSorveteria/`) | The Farmer Was Replaced + Papa's Freezeria | começa com a fábrica vazia; o jogador **programa os robôs em janelas de código flutuantes** (uma para todos ou uma por robô); cada sorvete passa por casquinha → sorvete → massa → bater → calda → coberturas, e **qualquer etapa pode falhar** (tratada com objetivos `+!g`/`-!g`); árvore com estações, cardápio e partes da linguagem; **robôs passam o sorvete pela bancada** (multiagente) e um gerente compra sozinho; erros comuns com mensagem de iniciante |
 
 ```
- jogos/arena/arena.agt ─► Lexer ─► Parser ─► AST ─► Semântica ─► Interpretador
+ arena.agt (DSL)       ─► Lexer ─► Parser ─► AST ─► Semântica ─► Interpretador
                                                                    │   ▲
                                               ações (atirar, perseguir…)   percepções (+atingido(D), +onda(N)…)
                                                                    ▼   │
@@ -25,47 +26,115 @@ Dois jogos completos mostram as duas partes funcionando juntas:
 A engine não sabe o que é crença ou plano; a DSL não sabe o que é OpenGL. Elas
 se encontram em `agentdsl/componente.py` (`ServicoAgentes` e `ComportamentoAgente`).
 
-## Instalação e uso
+## Começando (como na Unity)
 
-Python 3.10+ e placa de vídeo/driver com OpenGL 3.3.
+> **Novo aqui?** Leia o [TUTORIAL.md](TUTORIAL.md): tour do editor, scripts, prefabs, física, UI e a AgentDSL,
+> refazendo do zero o Coletor de Moedas passo a passo.
 
 ```powershell
 pip install -r requirements.txt
 ```
 ```powershell
-python jogar.py
+python editor.py
 ```
-Abre o menu com os dois jogos (`python jogar.py arena` ou `python jogar.py torres` vão direto).
 
-| Tecla | Arena | Defesa da Base |
+Abre o **editor**. Na tela inicial clique em **"Abrir o projeto de exemplo"** (ou crie um projeto novo).
+A janela abre maximizada; arraste as bordas entre os painéis para mudar o tamanho deles (como na Unity).
+
+| Unity | Aqui | Como |
 |---|---|---|
-| WASD / setas | mover | — |
-| mouse | — | comprar (painel), posicionar, selecionar torre |
-| 1–4 | escolher melhoria | escolher torre |
-| espaço | — | iniciar onda |
-| ESC | pausa | cancela / pausa |
-| **F1** | **editor** | **editor** |
-| F2 | reinicia | reinicia |
+| Hierarchy | Hierarchy (esquerda) | clique seleciona · arraste um objeto sobre outro = vira filho · botão direito = criar/renomear/excluir |
+| Scene | Scene (centro) | W/E/R = mover/girar/escalar · botão do meio ou direito arrasta · roda = zoom · F = focar |
+| Inspector | Inspector (direita) | edite os valores (clique e digite, ou arraste sobre o nome do campo) · **Adicionar Componente** |
+| Project | Project (embaixo) | pastas do projeto · botão direito → **Criar → Script** · clique duplo abre no VS Code |
+| Console | Console (aba embaixo) | mensagens, erros dos scripts e os `print()` do jogo |
+| Play | **► Play** (Ctrl+P) | roda a cena atual numa janela |
+| Ctrl+S / Ctrl+Z | iguais | salvar cena / desfazer (Ctrl+Y refaz) · Ctrl+D duplica · Del exclui |
 
-```powershell
-python -m agentdsl verificar jogos/arena/arena.agt
+### Criar um script
+
+1. No Project, botão direito na pasta **Scripts → Criar Script**, dê um nome (ex.: `Jogador`).
+2. Clique duas vezes no arquivo: ele abre no VS Code já com um modelo pronto:
+
+```python
+from engine2d import Componente
+
+class Jogador(Componente):
+    CAMPOS = {"velocidade": "float"}     # aparece no Inspector (= variável pública na Unity)
+    velocidade = 200.0
+
+    def iniciar(self):                   # = Start()
+        pass
+
+    def atualizar(self, dt):             # = Update()
+        dx, dy = self.motor.entrada.direcao_wasd()
+        self.transform.x += dx * self.velocidade * dt
+        self.transform.y += dy * self.velocidade * dt
 ```
-CLI da DSL: `tokens`, `ast`, `simbolos`, `verificar`, `executar` (sem gráficos), `jogo`.
-Ela lê o "contrato" do jogo (ações, percepções) do `.py` com o mesmo nome do `.agt`.
-Exemplos com erros de propósito em `exemplos/invalidos/`.
+
+3. Salve. O editor recarrega sozinho. Selecione um objeto → **Adicionar Componente → Scripts → Jogador**.
+4. **► Play**.
+
+| Unity (C#) | Engine2D (Python) |
+|---|---|
+| `GetComponent<Rigidbody2D>()` | `self.obter(CorpoRigido)` |
+| `GameObject.Find("jogador")` | `self.cena.encontrar("jogador")` |
+| `transform.position` | `self.transform.x`, `self.transform.y` (ou `posicao_mundo`) |
+| `Input.GetKey(KeyCode.Space)` | `self.motor.entrada.tecla("space")` |
+| `Destroy(gameObject)` | `self.gameobject.destruir()` |
+| `Instantiate(prefab, pos)` | `self.cena.instanciar(dados_do_prefab, x, y)` |
+| `OnTriggerEnter2D(Collider2D outro)` | `def ao_entrar_colisao(self, outro):` |
+| `Debug.Log("oi")` | `print("oi")` (aparece no Console) |
+
+### Organização de um projeto
+
+```
+MeuJogo/
+  projeto.json            nome, cena inicial, tamanho da janela
+  Assets/
+    Cenas/*.cena          cenas (JSON)
+    Scripts/*.py          seus scripts (componentes)
+    Sprites/*.png         imagens (arraste do Windows para dentro do editor para importar)
+    Prefabs/*.prefab      objetos prontos (arraste um objeto da Hierarchy para o Project)
+    Agentes/*.agt         comportamentos na AgentDSL
+  Library/                arquivos temporários do editor (pode apagar)
+```
+
+Para rodar um projeto sem o editor: `python rodar.py MeuJogo`.
+
+### O projeto de exemplo ("Coletor de Moedas")
+
+`ProjetoExemplo/` — o jogador (WASD) pega moedas enquanto zumbis o perseguem.
+- `Assets/Scripts/Jogador.py`, `Moeda.py`, `Placar.py`: scripts comentados.
+- `Assets/Agentes/inimigos.agt`: zumbis e ondas escritos na AgentDSL.
+- `Assets/Scripts/AcoesDSL.py`: cria a ação `avisar(...)` para a DSL a partir do Python (`@acao_dsl`).
+- A câmera é filha do jogador na Hierarchy (por isso segue ele), como na Unity.
+
+### Os dois jogos completos
+
+Também são projetos do editor, prontos para abrir pela tela inicial (ou `python editor.py ProjetoArena`):
+
+| Projeto | O que tem |
+|---|---|
+| `ProjetoArena/` — Arena dos Sobreviventes (estilo Vampire Survivors) | `Assets/Agentes/arena.agt` com inimigos, chefe, armas e ondas; scripts `Jogador`, `Inimigo`, `Armas`, `Gema`, `GerenteArena`, `Comum`; um prefab por inimigo |
+| `ProjetoTorres/` — Defesa da Base (estilo Bloons TD) | `Assets/Agentes/torres.agt` com inimigos que se dividem, torres e melhorias, 15 ondas; scripts `Mapa`, `Inimigos`, `Torres`, `GerenteTD`, `Comum`; prefabs de inimigos e torres |
+| `ProjetoPlataforma/` — Pulo Verde (plataforma estilo Mario) | montado pelo editor (`montar_plataforma.py`); fase em `Assets/Fases/fase1.mapa` (componente `MapaTiles`); física com gravidade, chão, paredes e plataformas atravessáveis; `plataforma.agt` com slime, caracol, abelha, sapo, blocos "?" e o agente da fase; arte Kenney *New Platformer Pack* (CC0) |
+| `ProjetoNavinha/` — Navinha (shoot 'em up) | montado inteiro pelo editor (`montar_navinha.py` + robô do editor); `Assets/Agentes/navinha.agt` com 6 inimigos (herança), chefe de 3 fases e o diretor das ondas; partículas, fundo rolante e som; arte Kenney *Space Shooter Redux* (CC0) |
+| `ProjetoSorveteria/` — Fábrica de Sorvete | scripts `Robo` (fila de comandos, pilha de objetivos, falhas), `Fabrica` (pedidos e nota), `Painel`/`Janelas` (janelas flutuantes, compilação por janela), `Desbloqueios` (árvore + verificação da AST), `Erros` (mensagens amigáveis), `Tutorial`; `Solucoes/` tem um programa por fase; gerado por `gerar_sorveteria.py` |
+
+Para só jogar, sem o editor: `python jogar.py` (menu com todos os projetos) ou `python rodar.py ProjetoArena`.
+Os jogos abrem em tela cheia: o jogo é desenhado num framebuffer (FBO) na resolução dele e ampliado para o
+monitor mantendo a proporção (`--janela` abre numa janela).
+Um script pode importar outro do mesmo projeto (`from Comum import painel_fim`).
+
+### Testes e medições
 
 ```powershell
 python -m pytest
 ```
-54 testes (use `-m "not gpu"` numa máquina sem OpenGL).
-
 ```powershell
 python benchmark_engine.py
 ```
-```powershell
-python benchmark_dsl.py
-```
-Geram os CSVs e gráficos de `resultados/` usados nos artigos.
 
 ---
 
@@ -108,7 +177,7 @@ Motor(pasta_assets="assets").executar(cena)
 | OnGUI / Canvas | `CamadaUI` (modo imediato: texto, barras, botões, janelas modais) | `ui.py` |
 | Editor (Hierarchy, Inspector, Scene view, Play/Pause) | `Editor` (F1) | `editor.py` |
 
-### Editor (F1, em qualquer cena)
+### Inspetor de depuração (F1, dentro dos jogos de demonstração)
 
 - **Hierarquia** (esquerda): árvore de objetos, nós recolhíveis (+/−), clique seleciona.
 - **Inspector** (direita): Transform e todos os componentes com seus campos editáveis
@@ -131,6 +200,14 @@ Sprite → transformação M = T·R·S → **culling** → agrupamento → verte
   toca o retângulo visível da câmera — teste vetorizado no numpy (`renderizador.py`).
 - **Sprites estáticos**: cenário marcado `estatico=True` não recalcula a pose a cada quadro.
 - **UI**: uma Surface do pygame enviada à GPU sem cópia (buffer BGRA direto no `glTexSubImage2D`), invertida pelo próprio sprite (sy = −1).
+- **Ordem de desenho**: chave (camada de desenho, ordem na camada, ordem na Hierarchy).
+- **Iluminação 2D** (`Luz2D`, `ProjetorSombra2D`): 1) mapa de luz num FBO RGBA16F com stencil, limpo com a luz
+  global; 2) cada luz (ponto ou cone) é um quad com atenuação suave somado por mistura aditiva
+  (`GL_ONE, GL_ONE`); 3) sombras por **volumes de sombra 2D**: os polígonos do objeto até longe da luz marcam o
+  stencil e a luz só é desenhada onde ele é 0; 4) o fragment shader dos sprites multiplica a cor pela luz do
+  pixel (`gl_FragCoord` → coordenada no mapa de luz). Sprites com `receber_luz = False` ignoram as luzes e
+  `aditivo = True` usa `GL_SRC_ALPHA, GL_ONE` (brilho), agrupando os lotes por textura e modo de mistura.
+- **Tela cheia**: o jogo é desenhado num FBO na sua resolução e esse quadro é ampliado para o monitor.
 
 ## Parte 2 — AgentDSL (Compiladores)
 

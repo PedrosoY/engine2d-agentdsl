@@ -1,0 +1,78 @@
+{
+  "nome": "item_pontos",
+  "tag": "item",
+  "ativo": true,
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "rotacao": 0.0,
+    "escala_x": 1.0,
+    "escala_y": 1.0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Itens/star_gold.png",
+        "cor": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "camada_desenho": "Padrao",
+        "ordem": 4,
+        "virar_x": false,
+        "virar_y": false,
+        "largura": 0.0,
+        "altura": 0.0,
+        "visivel": true,
+        "estatico": false,
+        "receber_luz": false,
+        "aditivo": false
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "forma": "circulo",
+        "raio": 16.0,
+        "largura": 32.0,
+        "altura": 32.0,
+        "gatilho": true,
+        "so_por_cima": false,
+        "camada_fisica": "item",
+        "dx": 0.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "tipo": "Item",
+      "campos": {
+        "tipo": "pontos",
+        "velocidade": 90.0
+      }
+    },
+    {
+      "tipo": "Luz2D",
+      "campos": {
+        "tipo": "ponto",
+        "cor": [
+          1.0,
+          0.85,
+          0.3,
+          1.0
+        ],
+        "intensidade": 0.9,
+        "raio": 90.0,
+        "raio_interno": 0.0,
+        "angulo": 90.0,
+        "abertura": 60.0,
+        "sombras": false,
+        "piscar": 0.0,
+        "apagar_em": 0.0
+      }
+    }
+  ],
+  "filhos": []
+}

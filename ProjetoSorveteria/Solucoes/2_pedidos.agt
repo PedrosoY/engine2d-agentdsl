@@ -1,0 +1,14 @@
+// Fase 2 (Sentidos, Variáveis, Operadores + estações): pergunta e faz exatamente o pedido.
+// Cole na janela "Todos os robôs". O Executar começa pelo primeiro objetivo (!produzir).
++!produzir <- perguntar_pedido; !montar.
++!montar : pedido_tamanho(T) & pedido_sabor(S) <- pegar_casquinha(T); adicionar_sorvete(S); !massa.
++!massa : pedido_massa(M) <- adicionar_massa(M); !bater.
++!massa <- !bater.
++!bater : pedido_ponto(P) <- bater(P); !calda.
++!bater <- !calda.
++!calda : pedido_calda(C) <- adicionar_calda(C); !cobrir.
++!calda <- !cobrir.
++!cobrir : pedido_cobertura(C) & nao tem_cobertura(C) <- adicionar_cobertura(C); !cobrir.
++!cobrir <- entregar; !produzir.
+// qualquer falha lá dentro sobe até aqui: joga fora e recomeça (o robô lembra o pedido)
+-!produzir <- jogar_fora; !produzir.

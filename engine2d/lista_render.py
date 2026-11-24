@@ -1,4 +1,9 @@
-"""Lista de renderização: os sprites visíveis e a ordenação por camada (L_A < L_B ⇒ A antes)."""
+"""Lista de renderização: os sprites visíveis e a ordenação por camada (L_A < L_B ⇒ A antes).
+
+A chave de ordenação é (camada de desenho, ordem na camada, ordem na hierarquia): primeiro a camada
+de desenho (lista do projeto: Fundo, Padrao, Frente...), depois o número "ordem" do SpriteRenderer e,
+empatando, quem vem depois na Hierarchy é desenhado por cima.
+"""
 from __future__ import annotations
 
 from .sprite import Sprite
@@ -17,20 +22,21 @@ class ListaRenderizacao:
         # A ordem entre camadas continua garantida, mas a ordem de inserção dentro
         # de uma camada deixa de valer. Reduz as quebras de lote no renderizador.
         self.agrupar_texturas = agrupar_texturas
-        self._sprites: list[Sprite] = []
+        # dict em vez de list: mantém a ordem de inserção e remove em O(1) (partículas e tiros
+        # entram e saem às dezenas por quadro)
+        self._sprites: dict[Sprite, None] = {}
         self._ordenados: list[Sprite] = []
         self._precisa_ordenar = False
         self.ordenacoes = 0  # contador para o benchmark
 
     def adicionar(self, sprite: Sprite) -> Sprite:
         sprite.lista = self
-        self._sprites.append(sprite)
+        self._sprites[sprite] = None
         self._precisa_ordenar = True
         return sprite
 
     def remover(self, sprite: Sprite) -> None:
-        if sprite in self._sprites:
-            self._sprites.remove(sprite)
+        if self._sprites.pop(sprite, 0) is None:
             sprite.lista = None
             self._precisa_ordenar = True
 
@@ -47,10 +53,11 @@ class ListaRenderizacao:
         """Sprites em ordem de desenho: camada crescente (L_A < L_B ⇒ A antes de B)."""
         if self._precisa_ordenar:
             # sorted() do Python é estável (Timsort): mantém a ordem de inserção.
+            # camada de desenho → ordem na camada → ordem na hierarquia → ordem de inserção
             if self.agrupar_texturas:
-                chave = lambda s: (s.camada, s.textura.id)  # noqa: E731
+                chave = lambda s: (*s.chave_ordem, s.textura.id)  # noqa: E731
             else:
-                chave = lambda s: s.camada  # noqa: E731
+                chave = lambda s: s.chave_ordem  # noqa: E731
             self._ordenados = sorted(self._sprites, key=chave)
             self._precisa_ordenar = False
             self.ordenacoes += 1

@@ -1,0 +1,13 @@
+ARENA DOS SOBREVIVENTES (estilo Vampire Survivors)
+
+WASD anda; as armas atiram sozinhas. Pegue os cristais para subir de nível e escolher melhorias.
+Sobreviva até o minuto 6 ou derrote o chefe (minuto 4). ESC pausa.
+
+Onde está cada coisa:
+- Assets/Agentes/arena.agt      -> TODO o comportamento: inimigos, chefe, armas e ondas (AgentDSL)
+- Assets/Scripts/Jogador.py     -> movimento, vida, experiência
+- Assets/Scripts/Inimigo.py     -> gera as percepções dos inimigos (atingido, tocando_jogador...)
+- Assets/Scripts/Armas.py       -> projéteis, serras, onda de choque e as ações da DSL das armas
+- Assets/Scripts/Gema.py        -> cristais de experiência (ação soltar_xp)
+- Assets/Scripts/GerenteArena.py -> relógio, subida de nível, HUD, vitória/derrota
+- Assets/Prefabs/*.prefab       -> um prefab por modelo de inimigo do .agt (mesmo nome)

@@ -33,11 +33,17 @@ class Sprite:
         self.textura = textura
         self.transformacao = Transformacao(x, y, rotacao, sx, sy)
         self._camada = int(camada)
+        # Ordem de desenho = (camada de desenho, ordem na camada, ordem na hierarquia):
+        # quem tem o número menor é desenhado antes (fica atrás).
+        self._indice_camada = 0
+        self._ordem_hierarquia = 0
         self.largura = float(largura if largura is not None else textura.largura)
         self.altura = float(altura if altura is not None else textura.altura)
         self.cor = tuple(float(c) for c in cor)
         self.regiao_uv = (0.0, 0.0, 1.0, 1.0)
         self.visivel = True
+        self.iluminado = True        # escurece/clareia com as luzes 2D (False = brilho próprio)
+        self.aditivo = False         # mistura aditiva: soma a cor no fundo (brilhos, fogo, explosões)
         self.espaco_tela = espaco_tela
         self.lista = None  # preenchido por ListaRenderizacao.adicionar
         self.dados: dict = {}  # espaço livre para a aplicação (ex.: agente da DSL)
@@ -54,6 +60,34 @@ class Sprite:
             self._camada = valor
             if self.lista is not None:
                 self.lista.marcar_reordenar()
+
+    @property
+    def indice_camada(self) -> int:
+        """Posição da camada de desenho na lista do projeto (Fundo < Padrao < Frente...)."""
+        return self._indice_camada
+
+    @indice_camada.setter
+    def indice_camada(self, valor: int) -> None:
+        if valor != self._indice_camada:
+            self._indice_camada = valor
+            if self.lista is not None:
+                self.lista.marcar_reordenar()
+
+    @property
+    def ordem_hierarquia(self) -> int:
+        """Desempate: na mesma camada e ordem, quem vem depois na Hierarchy fica na frente."""
+        return self._ordem_hierarquia
+
+    @ordem_hierarquia.setter
+    def ordem_hierarquia(self, valor: int) -> None:
+        if valor != self._ordem_hierarquia:
+            self._ordem_hierarquia = valor
+            if self.lista is not None:
+                self.lista.marcar_reordenar()
+
+    @property
+    def chave_ordem(self) -> tuple:
+        return (self._indice_camada, self._camada, self._ordem_hierarquia)
 
     # Atalhos para a transformação
     @property

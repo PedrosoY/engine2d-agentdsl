@@ -5,6 +5,8 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 os.environ["ENGINE2D_LEVANTAR_ERROS"] = "1"   # nos testes, erro tem que falhar o teste
+os.environ["ENGINE2D_SEM_RECENTES"] = "1"
+os.environ["ENGINE2D_OCULTO"] = "1"          # rodar.py não abre janela na tela durante os testes
 
 
 class TexturaFalsa:

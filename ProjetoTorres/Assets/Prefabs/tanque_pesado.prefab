@@ -1,0 +1,42 @@
+{
+  "nome": "tanque_pesado",
+  "tag": "inimigo",
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "escala_x": 1.0,
+    "escala_y": 1.0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Inimigos/tanque_pesado.png",
+        "camada": 2
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "raio": 16,
+        "gatilho": true,
+        "camada_fisica": "inimigo"
+      }
+    },
+    {
+      "tipo": "SeguirCaminho",
+      "campos": {
+        "velocidade": 34
+      }
+    },
+    {
+      "tipo": "InimigoTD",
+      "campos": {}
+    },
+    {
+      "tipo": "Piscar",
+      "campos": {}
+    }
+  ],
+  "filhos": []
+}

@@ -1,14 +1,14 @@
-"""Modelo de objetos no estilo Unity/Godot: GameObject + Transform + Componentes.
+"""Modelo de objetos: GameObject + Transform + Componentes.
 
 - ``GameObject``: entidade da cena (nome, tag, ativo). Não tem comportamento
   próprio: tudo vem dos componentes anexados.
 - ``Transform``: posição, rotação e escala LOCAIS, relativas ao pai. A pose no
   mundo é a composição com a pose de todos os ancestrais (hierarquia de cena):
       M_mundo(filho) = M_mundo(pai) · M_local(filho)
-- ``Componente``: classe base dos comportamentos (equivale ao MonoBehaviour).
-  Ganchos: iniciar() [Start], atualizar(dt) [Update], atualizar_tardio(dt) [LateUpdate],
-  ao_entrar_colisao(outro)
-  [OnTriggerEnter], ao_sair_colisao(outro), desenhar_ui(ui) [OnGUI], ao_destruir().
+- ``Componente``: classe base dos comportamentos.
+  Ganchos: iniciar() (antes do primeiro quadro), atualizar(dt) (todo quadro),
+  atualizar_tardio(dt) (depois de todos os atualizar), ao_entrar_colisao(outro),
+  ao_sair_colisao(outro), desenhar_ui(ui) (interface na tela) e ao_destruir().
   ``CAMPOS`` lista os atributos editáveis no inspector e salvos no JSON da cena.
 """
 from __future__ import annotations
@@ -120,6 +120,8 @@ class GameObject:
         self.componentes: list[Componente] = []
         self.cena = None
         self.destruido = False
+        self.indice_hierarquia = 0     # posição na Hierarchy (desempate da ordem de desenho)
+        self.oculto = False            # objeto auxiliar criado por um componente: não aparece nem é salvo
         if pai is not None:
             self.transform.definir_pai(pai.transform)
 
@@ -135,7 +137,7 @@ class GameObject:
         return comp
 
     def obter(self, tipo) -> "Componente | None":
-        """Primeiro componente do tipo (classe ou nome da classe), como GetComponent<T>()."""
+        """Primeiro componente do tipo (classe ou nome da classe)."""
         for c in self.componentes:
             if (isinstance(tipo, str) and type(c).__name__ == tipo) or \
                     (isinstance(tipo, type) and isinstance(c, tipo)):
@@ -196,6 +198,8 @@ class GameObject:
 
 class Componente:
     CAMPOS: dict[str, str] = {}   # nome do atributo → tipo (float, int, bool, str, cor)
+    MENU = "Scripts"              # categoria no "Adicionar Componente" do editor
+    EXECUTA_NO_EDITOR = False     # True: iniciar() roda também no modo de edição (ex.: SpriteRenderer)
 
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
@@ -236,7 +240,7 @@ class Componente:
     # ganchos (sobrescreva nas subclasses)
     def iniciar(self) -> None: ...
     def atualizar(self, dt: float) -> None: ...
-    def atualizar_tardio(self, dt: float) -> None: ...   # LateUpdate: depois de todos os atualizar()
+    def atualizar_tardio(self, dt: float) -> None: ...   # depois de todos os atualizar()
     def ao_entrar_colisao(self, outro) -> None: ...
     def ao_sair_colisao(self, outro) -> None: ...
     def desenhar_ui(self, ui) -> None: ...
@@ -252,3 +256,22 @@ def _json(v):
     if isinstance(v, tuple):
         return list(v)
     return v
+
+
+class ComponenteAusente(Componente):
+    """Guarda os dados de um componente cujo script não existe ou tem erro, para não perdê-los."""
+
+    MENU = ""
+
+    def __init__(self, tipo_original: str = "?", campos_originais: dict | None = None):
+        super().__init__()
+        self.tipo_original = tipo_original
+        self.campos_originais = dict(campos_originais or {})
+
+    def para_dict(self) -> dict:
+        return {"tipo": self.tipo_original, "campos": self.campos_originais}
+
+    def linhas_inspector(self) -> list[str]:
+        return [f"Script '{self.tipo_original}' não encontrado ou com erro.",
+                "Corrija o script: os valores salvos serão mantidos."]
+

@@ -1,0 +1,117 @@
+{
+  "nome": "chefe",
+  "tag": "inimigo",
+  "ativo": true,
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "rotacao": 0.0,
+    "escala_x": 1.5,
+    "escala_y": 1.5
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Inimigos/ufoRed.png",
+        "cor": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "camada_desenho": "Padrao",
+        "ordem": 3,
+        "virar_x": false,
+        "virar_y": false,
+        "largura": 0.0,
+        "altura": 0.0,
+        "visivel": true,
+        "estatico": false,
+        "receber_luz": true,
+        "aditivo": false
+      }
+    },
+    {
+      "tipo": "CorpoRigido",
+      "campos": {
+        "tipo": "cinematico",
+        "vx": 0.0,
+        "vy": 0.0,
+        "escala_gravidade": 1.0,
+        "arrasto": 0.0,
+        "massa": 1.0,
+        "elasticidade": 0.0,
+        "velocidade_maxima": 0.0,
+        "congelar_x": false,
+        "congelar_y": false
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "forma": "circulo",
+        "raio": 44.0,
+        "largura": 32.0,
+        "altura": 32.0,
+        "gatilho": true,
+        "so_por_cima": false,
+        "camada_fisica": "inimigo",
+        "dx": 0.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "tipo": "NaveInimiga",
+      "campos": {
+        "dano_contato": 1,
+        "tamanho_explosao": 3.0
+      }
+    },
+    {
+      "tipo": "Piscar",
+      "campos": {
+        "duracao": 0.12
+      }
+    },
+    {
+      "tipo": "ComportamentoAgente",
+      "campos": {
+        "modelo": "",
+        "agente": "",
+        "olhar_movimento": false,
+        "frente_do_sprite": 0.0
+      }
+    },
+    {
+      "tipo": "ProjetorSombra2D",
+      "campos": {
+        "forma": "colisor",
+        "raio": 20.0,
+        "largura": 40.0,
+        "altura": 40.0
+      }
+    },
+    {
+      "tipo": "Luz2D",
+      "campos": {
+        "tipo": "ponto",
+        "cor": [
+          1.0,
+          0.25,
+          0.2,
+          1.0
+        ],
+        "intensidade": 1.5,
+        "raio": 280.0,
+        "raio_interno": 0.0,
+        "angulo": 90.0,
+        "abertura": 60.0,
+        "sombras": false,
+        "piscar": 0.35,
+        "apagar_em": 0.0
+      }
+    }
+  ],
+  "filhos": []
+}

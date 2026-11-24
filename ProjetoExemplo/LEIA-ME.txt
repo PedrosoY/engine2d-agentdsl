@@ -1,0 +1,15 @@
+PROJETO DE EXEMPLO — Coletor de Moedas
+
+Abra com:  python editor.py ProjetoExemplo   (ou pelo botão na tela inicial do editor)
+
+O que olhar:
+- Assets/Scripts/Jogador.py  -> movimento (WASD), mira e tiro com o mouse, colisão com moedas e inimigos
+- Assets/Scripts/Bala.py     -> vai no prefab da bala; avisa o zumbi atingido (+atingido na DSL)
+- Assets/Scripts/Moeda.py    -> gira e flutua
+- Assets/Scripts/Placar.py   -> texto na tela
+- Assets/Scripts/AcoesDSL.py -> cria a ação "avisar" para a AgentDSL
+- Assets/Agentes/inimigos.agt -> zumbis e ondas escritos na AgentDSL
+- Assets/Prefabs/zumbi.prefab -> o objeto criado por invocar(zumbi, N)
+- Assets/Prefabs/bala.prefab  -> a bala criada a cada clique (cena.instanciar)
+
+Aperte Play (Ctrl+P) para jogar. Os print() aparecem no Console do editor.

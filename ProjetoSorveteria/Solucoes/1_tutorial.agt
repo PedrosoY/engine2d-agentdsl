@@ -1,0 +1,3 @@
+// Fase 1 (sem desbloqueios): cole na janela "Todos os robôs" e aperte Executar.
++!produzir_sorvete <- perguntar_pedido; pegar_casquinha; adicionar_sorvete(creme); entregar; !produzir_sorvete.
+-!produzir_sorvete <- jogar_fora; !produzir_sorvete.

@@ -1,0 +1,37 @@
+{
+  "nome": "metralhadora",
+  "tag": "torre",
+  "transform": {
+    "x": 0,
+    "y": 0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Torres/base_metralhadora.png",
+        "camada": 3
+      }
+    },
+    {
+      "tipo": "Torre",
+      "campos": {
+        "tipo": "metralhadora"
+      }
+    }
+  ],
+  "filhos": [
+    {
+      "nome": "torreta",
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Torres/torreta_metralhadora.png",
+            "camada": 5
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "nome": "moeda_bloco",
+  "tag": "item",
+  "ativo": true,
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "rotacao": 0.0,
+    "escala_x": 1.0,
+    "escala_y": 1.0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Tiles/coin_gold.png",
+        "cor": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "camada_desenho": "Padrao",
+        "ordem": 3,
+        "virar_x": false,
+        "virar_y": false,
+        "largura": 0.0,
+        "altura": 0.0,
+        "visivel": true,
+        "estatico": false
+      }
+    },
+    {
+      "tipo": "CorpoRigido",
+      "campos": {
+        "tipo": "dinamico",
+        "vx": 0.0,
+        "vy": 0.0,
+        "escala_gravidade": 1.0,
+        "arrasto": 0.0,
+        "massa": 1.0,
+        "elasticidade": 0.0,
+        "velocidade_maxima": 1400.0,
+        "congelar_x": false,
+        "congelar_y": false
+      }
+    },
+    {
+      "tipo": "Coletavel",
+      "campos": {
+        "tipo": "moeda_bloco",
+        "quadros": "Assets/Sprites/Tiles/coin_gold.png,Assets/Sprites/Tiles/coin_gold_side.png",
+        "velocidade": 120.0
+      }
+    }
+  ],
+  "filhos": []
+}

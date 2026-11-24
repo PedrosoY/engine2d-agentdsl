@@ -135,13 +135,29 @@ class AcaoExterna:
 
 # --- estrutura do programa -------------------------------------------------
 @dataclass
-class Evento:
-    op: str          # "+" adição | "-" remoção
+class AcaoObjetivo:
+    """!objetivo(args): pede ao agente que alcance um objetivo (dispara o evento +!objetivo)."""
     literal: Literal
     pos: Posicao | None = None
 
     def __str__(self):
-        return f"{self.op}{self.literal}"
+        return f"!{self.literal}"
+
+
+@dataclass
+class Evento:
+    op: str          # "+" adição | "-" remoção
+    literal: Literal
+    pos: Posicao | None = None
+    objetivo: bool = False   # +!g (novo objetivo) / -!g (o objetivo falhou)
+
+    @property
+    def tipo(self) -> str:
+        """Chave do evento na fila: "+", "-", "+!" ou "-!"."""
+        return self.op + ("!" if self.objetivo else "")
+
+    def __str__(self):
+        return f"{self.tipo}{self.literal}"
 
 
 @dataclass

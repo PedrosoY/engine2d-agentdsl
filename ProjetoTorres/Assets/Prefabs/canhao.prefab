@@ -1,0 +1,37 @@
+{
+  "nome": "canhao",
+  "tag": "torre",
+  "transform": {
+    "x": 0,
+    "y": 0
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Torres/base_canhao.png",
+        "camada": 3
+      }
+    },
+    {
+      "tipo": "Torre",
+      "campos": {
+        "tipo": "canhao"
+      }
+    }
+  ],
+  "filhos": [
+    {
+      "nome": "torreta",
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Torres/torreta_canhao.png",
+            "camada": 5
+          }
+        }
+      ]
+    }
+  ]
+}

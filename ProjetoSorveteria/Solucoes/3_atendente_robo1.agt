@@ -1,0 +1,3 @@
+// Fase 3 (Mais robôs): o robo1 só ATENDE e passa o pedido para o robo2.
++!atender <- perguntar_pedido; passar_pedido(robo2); !atender.
+-!atender <- !atender.

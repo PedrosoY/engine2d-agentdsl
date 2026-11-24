@@ -1,0 +1,251 @@
+{
+  "nome": "Fase1",
+  "objetos": [
+    {
+      "nome": "Câmera",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 480.0,
+        "y": 400.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "CameraPrincipal",
+          "campos": {
+            "zoom": 0.75,
+            "cor_fundo": [
+              0.765,
+              0.89,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        {
+          "tipo": "CameraPlataforma",
+          "campos": {
+            "alvo": "Jogador",
+            "mapa": "Mapa",
+            "suavidade": 6.0,
+            "adiante": 90.0
+          }
+        }
+      ],
+      "filhos": [
+        {
+          "nome": "Ceu",
+          "tag": "",
+          "ativo": true,
+          "transform": {
+            "x": 0.0,
+            "y": -104.0,
+            "rotacao": 0.0,
+            "escala_x": 1.0,
+            "escala_y": 1.0
+          },
+          "componentes": [
+            {
+              "tipo": "FundoRolante",
+              "campos": {
+                "imagem": "Assets/Sprites/Fundos/background_clouds.png",
+                "velocidade_x": -12.0,
+                "velocidade_y": 0.0,
+                "paralaxe": 0.15,
+                "repetir_x": true,
+                "repetir_y": false,
+                "largura": 1500.0,
+                "altura": 512.0,
+                "escala": 2.0,
+                "camada_desenho": "Fundo",
+                "camada": 0,
+                "cor": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            }
+          ],
+          "filhos": []
+        }
+      ]
+    },
+    {
+      "nome": "Decoracao",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 0.0,
+        "y": 768.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "MapaTiles",
+          "campos": {
+            "arquivo": "Assets/Fases/fase1_decoracao.mapa",
+            "tamanho_celula": 64.0,
+            "camada_desenho": "Cenario",
+            "ordem": 0,
+            "camada_fisica": "chao",
+            "tag_colisores": "chao"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Mapa",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 0.0,
+        "y": 768.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "MapaTiles",
+          "campos": {
+            "arquivo": "Assets/Fases/fase1.mapa",
+            "tamanho_celula": 64.0,
+            "camada_desenho": "Padrao",
+            "ordem": 0,
+            "camada_fisica": "chao",
+            "tag_colisores": "chao"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Jogador",
+      "tag": "jogador",
+      "ativo": true,
+      "transform": {
+        "x": 159.39971923828125,
+        "y": 240.38198852539062,
+        "rotacao": 0.0,
+        "escala_x": 0.75,
+        "escala_y": 0.75
+      },
+      "componentes": [
+        {
+          "tipo": "SpriteRenderer",
+          "campos": {
+            "imagem": "Assets/Sprites/Personagem/character_green_idle.png",
+            "cor": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "camada_desenho": "Padrao",
+            "ordem": 10,
+            "virar_x": false,
+            "virar_y": false,
+            "largura": 0.0,
+            "altura": 0.0,
+            "visivel": true,
+            "estatico": false
+          }
+        },
+        {
+          "tipo": "CorpoRigido",
+          "campos": {
+            "tipo": "dinamico",
+            "vx": 0.0,
+            "vy": 0.0,
+            "escala_gravidade": 1.0,
+            "arrasto": 0.0,
+            "massa": 1.0,
+            "elasticidade": 0.0,
+            "velocidade_maxima": 1500.0,
+            "congelar_x": false,
+            "congelar_y": false
+          }
+        },
+        {
+          "tipo": "Colisor",
+          "campos": {
+            "forma": "caixa",
+            "raio": 16.0,
+            "largura": 60.0,
+            "altura": 92.0,
+            "gatilho": false,
+            "so_por_cima": false,
+            "camada_fisica": "jogador",
+            "dx": 0.0,
+            "dy": -12.0
+          }
+        },
+        {
+          "tipo": "Jogador",
+          "campos": {
+            "velocidade": 330.0,
+            "aceleracao": 2400.0,
+            "freio": 2800.0,
+            "forca_pulo": 860.0,
+            "vidas": 3,
+            "tempo_coiote": 0.1,
+            "lembrar_pulo": 0.12,
+            "altura_queda": -200.0
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "HUD",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 480.0,
+        "y": 400.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "Hud",
+          "campos": {
+            "tempo_fase": 300,
+            "cena_menu": "Assets/Cenas/Menu.cena"
+          }
+        }
+      ],
+      "filhos": []
+    },
+    {
+      "nome": "Agentes",
+      "tag": "",
+      "ativo": true,
+      "transform": {
+        "x": 480.0,
+        "y": 400.0,
+        "rotacao": 0.0,
+        "escala_x": 1.0,
+        "escala_y": 1.0
+      },
+      "componentes": [
+        {
+          "tipo": "ServicoAgentes",
+          "campos": {
+            "arquivo": "Assets/Agentes/plataforma.agt"
+          }
+        }
+      ],
+      "filhos": []
+    }
+  ]
+}

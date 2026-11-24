@@ -7,24 +7,24 @@ from pathlib import Path
 
 from .fisica import Fisica
 from .lista_render import ListaRenderizacao
-from .objeto import REGISTRO_COMPONENTES, Componente, GameObject
+from .objeto import REGISTRO_COMPONENTES, Componente, ComponenteAusente, GameObject
 
 _tardio_base = Componente.atualizar_tardio
 
 
 class Cena:
-    """Equivale à Scene da Unity.
-
-    Ordem de um quadro (``atualizar``):
+    """Ordem de um quadro (``atualizar``):
       1. ``iniciar()`` dos componentes recém-adicionados (Start);
       2. ``atualizar(dt)`` de todos os componentes ativos (Update), depois
-         ``atualizar_tardio(dt)`` (LateUpdate);
+         ``atualizar_tardio(dt)``;
       3. física: integra velocidades, resolve colisões, dispara eventos;
-      4. destruições pendentes (o objeto some no fim do quadro, como no Destroy()).
+      4. destruições pendentes (o objeto some no fim do quadro).
     """
 
-    def __init__(self, nome: str = "Cena", agrupar_texturas: bool = True):
+    def __init__(self, nome: str = "Cena", agrupar_texturas: bool = True, modo_edicao: bool = False):
         self.nome = nome
+        # Modo de edição (editor fora do Play): só componentes com EXECUTA_NO_EDITOR iniciam.
+        self.modo_edicao = modo_edicao
         self.motor = None
         self.objetos: list[GameObject] = []
         self.lista = ListaRenderizacao(agrupar_texturas=agrupar_texturas)
@@ -35,6 +35,9 @@ class Cena:
         self._a_destruir: list[tuple[GameObject, float]] = []
         self.tempo = 0.0
         self._cache_nomes: dict[str, GameObject] = {}
+        self.arquivo = None
+        self.luzes: list = []                # componentes Luz2D (iluminação 2D)
+        self.projetores_sombra: list = []    # componentes ProjetorSombra2D
 
     # --- criação / remoção --------------------------------------------------------
     def criar(self, nome="GameObject", x=0.0, y=0.0, componentes=(), pai=None, **kw) -> GameObject:
@@ -79,7 +82,7 @@ class Cena:
 
     # --- consultas ------------------------------------------------------------------
     def encontrar(self, nome: str) -> GameObject | None:
-        """Busca por nome (GameObject.Find). Usa cache: centenas de inimigos procuram
+        """Busca por nome. Usa cache: centenas de inimigos procuram
         o jogador todo quadro, e a busca linear seria O(n) para cada um."""
         go = self._cache_nomes.get(nome)
         if go is not None and not go.destruido and go.nome == nome and go.cena is self:
@@ -108,6 +111,8 @@ class Cena:
         while self._a_iniciar:
             pend, self._a_iniciar = self._a_iniciar, []
             for c in pend:
+                if self.modo_edicao and not type(c).EXECUTA_NO_EDITOR:
+                    continue
                 if not c._iniciado and c.gameobject is not None and not c.gameobject.destruido:
                     c._iniciado = True
                     c.iniciar()
@@ -140,14 +145,61 @@ class Cena:
                 restantes.append((go, atraso))
         self._a_destruir = restantes
 
+    def numerar_hierarquia(self) -> None:
+        """Dá a cada objeto a posição dele na Hierarchy (de cima para baixo, filhos logo depois do
+        pai). É o desempate da ordem de desenho: mais embaixo na lista = desenhado por cima."""
+        n = 0
+        pilha = list(reversed(self.raizes()))
+        while pilha:
+            go = pilha.pop()
+            go.indice_hierarquia = n
+            n += 1
+            pilha.extend(reversed(go.filhos))
+
+    def mover_na_hierarquia(self, go: GameObject, pai: GameObject | None, posicao: int) -> None:
+        """Muda o pai e a posição de ``go`` entre os irmãos (arrastar na Hierarchy)."""
+        go.transform.definir_pai(pai.transform if pai else None, manter_mundo=True)
+        if pai is not None:
+            irmaos = pai.transform.filhos
+            irmaos.remove(go.transform)
+            irmaos.insert(max(0, min(posicao, len(irmaos))), go.transform)
+        else:
+            raizes = [g for g in self.raizes() if g is not go]
+            posicao = max(0, min(posicao, len(raizes)))
+            self.objetos.remove(go)
+            if posicao < len(raizes):
+                self.objetos.insert(self.objetos.index(raizes[posicao]), go)
+            else:
+                self.objetos.append(go)
+
     def sincronizar_render(self) -> None:
         """Copia as poses dos GameObjects para os sprites (antes de desenhar)."""
         self.iniciar_pendentes()
+        self.numerar_hierarquia()
         for go in self.objetos:
             for c in go.componentes:
                 sinc = getattr(c, "sincronizar", None)
                 if sinc is not None and c._iniciado:
                     sinc()
+
+    def iluminacao(self) -> dict | None:
+        """Dados das luzes para o renderizador, ou None se a cena não tem nenhuma Luz2D ligada
+        (aí tudo aparece com a cor normal). Luz ambiente = soma das luzes globais."""
+        ativas = [l for l in self.luzes if l.habilitado and l.gameobject is not None
+                  and l.gameobject.ativo_na_hierarquia and not l.gameobject.destruido]
+        if not ativas:
+            return None
+        amb = [0.0, 0.0, 0.0]
+        pontos = []
+        for l in ativas:
+            if l.tipo == "global":
+                i = l.intensidade_atual()
+                for k in range(3):
+                    amb[k] += l.cor[k] * i
+            else:
+                pontos.append(l.dados())
+        sombras = [d for d in (p.dados() for p in self.projetores_sombra) if d is not None]
+        return {"ambiente": tuple(amb), "pontos": pontos, "sombras": sombras}
 
     def desenhar_ui(self, ui) -> None:
         for go in self.objetos:
@@ -162,10 +214,12 @@ class Cena:
         self.prefabs[nome] = dados
 
     def instanciar(self, prefab: str | dict, x: float = 0.0, y: float = 0.0, pai=None, **substituir) -> GameObject:
-        """Cria um GameObject a partir de um prefab (dict ou nome registrado).
+        """Cria um GameObject a partir de um prefab (dict, nome registrado ou "Assets/Prefabs/x.prefab").
 
         ``substituir`` troca campos de componentes: ``SpriteRenderer__imagem="x.png"``.
         """
+        if isinstance(prefab, str) and prefab.endswith(".prefab") and prefab not in self.prefabs:
+            self.prefabs[prefab] = json.loads(Path(prefab).read_text(encoding="utf-8"))
         dados = copy.deepcopy(self.prefabs[prefab] if isinstance(prefab, str) else prefab)
         for chave, valor in substituir.items():
             tipo, campo = chave.split("__", 1)
@@ -179,7 +233,7 @@ class Cena:
         return self.adicionar(go)
 
     def para_dict(self) -> dict:
-        return {"nome": self.nome, "objetos": [objeto_para_dict(g) for g in self.raizes() if not g.destruido]}
+        return {"nome": self.nome, "objetos": [objeto_para_dict(g) for g in self.raizes() if not g.destruido and not g.oculto]}
 
     def salvar(self, caminho) -> None:
         Path(caminho).write_text(json.dumps(self.para_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
@@ -193,6 +247,7 @@ class Cena:
 
     def carregar(self, caminho) -> None:
         self.carregar_dict(json.loads(Path(caminho).read_text(encoding="utf-8")))
+        self.arquivo = str(caminho)       # motor.reiniciar_cena() usa para recarregar
 
 
 def objeto_para_dict(go: GameObject) -> dict:
@@ -201,7 +256,7 @@ def objeto_para_dict(go: GameObject) -> dict:
         "nome": go.nome, "tag": go.tag, "ativo": go.ativo,
         "transform": {"x": t.x, "y": t.y, "rotacao": t.rotacao, "escala_x": t.escala_x, "escala_y": t.escala_y},
         "componentes": [c.para_dict() for c in go.componentes],
-        "filhos": [objeto_para_dict(f) for f in go.filhos],
+        "filhos": [objeto_para_dict(f) for f in go.filhos if not f.oculto],
     }
 
 
@@ -216,10 +271,12 @@ def objeto_de_dict(d: dict) -> GameObject:
     tr.escala_y = float(t.get("escala_y", t.get("escala", 1)))
     for cd in d.get("componentes", []):
         cls = REGISTRO_COMPONENTES.get(cd["tipo"])
-        if cls is None:
-            raise KeyError(f"tipo de componente desconhecido: {cd['tipo']}")
         campos = {k: (tuple(v) if isinstance(v, list) else v) for k, v in cd.get("campos", {}).items()}
-        go.adicionar(cls(**campos))
+        if cls is None:
+            go.adicionar(ComponenteAusente(cd["tipo"], cd.get("campos", {})))
+            continue
+        validos = cls._todos_campos()
+        go.adicionar(cls(**{k: v for k, v in campos.items() if k in validos or hasattr(cls, k)}))
     for fd in d.get("filhos", []):
         filho = objeto_de_dict(fd)
         filho.transform.definir_pai(tr)

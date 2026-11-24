@@ -1,0 +1,46 @@
+{
+  "nome": "bala",
+  "tag": "bala",
+  "transform": {
+    "x": 0,
+    "y": 0,
+    "escala_x": 0.7,
+    "escala_y": 0.7
+  },
+  "componentes": [
+    {
+      "tipo": "SpriteRenderer",
+      "campos": {
+        "imagem": "Assets/Sprites/Itens/bala.png",
+        "camada": 5
+      }
+    },
+    {
+      "tipo": "CorpoRigido",
+      "campos": {
+        "cinematico": true
+      }
+    },
+    {
+      "tipo": "Colisor",
+      "campos": {
+        "raio": 8,
+        "gatilho": true,
+        "camada_fisica": "bala"
+      }
+    },
+    {
+      "tipo": "TempoDeVida",
+      "campos": {
+        "segundos": 1.5
+      }
+    },
+    {
+      "tipo": "Bala",
+      "campos": {
+        "dano": 1
+      }
+    }
+  ],
+  "filhos": []
+}

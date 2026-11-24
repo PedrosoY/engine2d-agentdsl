@@ -123,7 +123,7 @@ class Agente:
         if self.planos is None:   # índice evento → planos, compartilhado entre instâncias
             self.planos = {}
             for p in decl.planos:
-                chave = (p.evento.op, p.evento.literal.nome, p.evento.literal.aridade)
+                chave = (p.evento.tipo, p.evento.literal.nome, p.evento.literal.aridade)
                 self.planos.setdefault(chave, []).append(p)
             sistema._planos_por_modelo[decl.nome] = self.planos
 
@@ -143,6 +143,11 @@ class Agente:
         self.crencas.discard(c)
         self.fila.append(("-", c))
         return True
+
+    def objetivo(self, nome: str, args: tuple = (), op: str = "+!") -> None:
+        """Novo objetivo (+!nome) ou falha de um objetivo (-!nome). Objetivos não são crenças:
+        só entram na fila de eventos."""
+        self.fila.append((op, (nome, tuple(args))))
 
     def acredita(self, nome: str, *args) -> bool:
         return (nome, tuple(args)) in self.crencas
@@ -199,11 +204,25 @@ class Agente:
             except ErroExecucao as e:   # erro em tempo de execução não derruba o jogo
                 self.sistema.registrar(self, f"ERRO (linha {plano.pos.linha}): {e}", tipo="erro")
             return True
+        if op == "+!":   # objetivo sem plano aplicável: o objetivo falha (como no Jason)
+            self.sistema.registrar(self, f"nenhum plano aplicável para +!{formatar_crenca((nome, args))}",
+                                   tipo="erro")
+            sem_plano = getattr(self.sistema.ambiente, "sem_plano", None)
+            if sem_plano:
+                sem_plano(self, nome, args)
         return True
 
     def _executar(self, plano: A.Plano, s: dict) -> None:
         self.sistema.stats["planos"] += 1
         for acao in plano.acoes:
+            if isinstance(acao, A.AcaoObjetivo):
+                vals = tuple(avaliar(a, s) for a in acao.literal.args)
+                # o ambiente pode decidir QUANDO o objetivo começa (ex.: o robô termina os comandos
+                # anteriores); sem isso, o evento +!objetivo entra direto na fila.
+                hook = getattr(self.sistema.ambiente, "objetivo", None)
+                if hook is None or not hook(self, acao.literal.nome, vals):
+                    self.objetivo(acao.literal.nome, vals)
+                continue
             if isinstance(acao, A.AcaoCrenca):
                 lit = acao.literal
                 vals = tuple(avaliar(a, s) for a in lit.args)
