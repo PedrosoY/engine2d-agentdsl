@@ -4,7 +4,7 @@ Projeto único para duas disciplinas de Engenharia de Computação (FHO):
 
 | Disciplina | Parte do projeto | Onde está |
 |---|---|---|
-| **Computação Gráfica** | Engine 2D em Python + OpenGL 3.3 com GameObjects e componentes: GameObjects, componentes, hierarquia de transformações, física com grade espacial, câmera, UI, **editor dentro do jogo**, renderização em lote/atlas e **view frustum culling** | `engine2d/`, `demo_engine.py`, `benchmark_engine.py` |
+| **Computação Gráfica** | Engine 2D em Python + OpenGL 3.3: GameObjects e componentes, hierarquia de transformações, iluminação 2D com sombras, física com grade espacial, câmera, UI, **editor dentro do jogo**, renderização em lote/atlas e **view frustum culling** | `engine2d/`, `demo_engine.py`, `benchmark_engine.py` |
 | **Teoria da Computação e Compiladores** | AgentDSL: linguagem orientada a eventos inspirada em AgentSpeak/Jason (crenças → eventos → planos → ações), com lexer, parser LL(1), análise semântica com tipos e interpretador. Controla os inimigos, torres, armas e ondas dos jogos | `agentdsl/`, `GRAMATICA.md`, `Projeto*/Assets/Agentes/*.agt`, `benchmark_dsl.py` |
 
 Três jogos completos mostram as duas partes funcionando juntas:
@@ -26,7 +26,7 @@ Três jogos completos mostram as duas partes funcionando juntas:
 A engine não sabe o que é crença ou plano; a DSL não sabe o que é OpenGL. Elas
 se encontram em `agentdsl/componente.py` (`ServicoAgentes` e `ComportamentoAgente`).
 
-## Começando (como na Unity)
+## Começando
 
 > **Novo aqui?** Leia o [TUTORIAL.md](TUTORIAL.md): tour do editor, scripts, prefabs, física, UI e a AgentDSL,
 > refazendo do zero o Coletor de Moedas passo a passo.
@@ -39,17 +39,17 @@ python editor.py
 ```
 
 Abre o **editor**. Na tela inicial clique em **"Abrir o projeto de exemplo"** (ou crie um projeto novo).
-A janela abre maximizada; arraste as bordas entre os painéis para mudar o tamanho deles (como na Unity).
+A janela abre maximizada; arraste as bordas entre os painéis para mudar o tamanho deles.
 
-| Unity | Aqui | Como |
+| Painel | Onde | Como usar |
 |---|---|---|
-| Hierarchy | Hierarchy (esquerda) | clique seleciona · arraste um objeto sobre outro = vira filho · botão direito = criar/renomear/excluir |
-| Scene | Scene (centro) | W/E/R = mover/girar/escalar · botão do meio ou direito arrasta · roda = zoom · F = focar |
-| Inspector | Inspector (direita) | edite os valores (clique e digite, ou arraste sobre o nome do campo) · **Adicionar Componente** |
-| Project | Project (embaixo) | pastas do projeto · botão direito → **Criar → Script** · clique duplo abre no VS Code |
-| Console | Console (aba embaixo) | mensagens, erros dos scripts e os `print()` do jogo |
-| Play | **► Play** (Ctrl+P) | roda a cena atual numa janela |
-| Ctrl+S / Ctrl+Z | iguais | salvar cena / desfazer (Ctrl+Y refaz) · Ctrl+D duplica · Del exclui |
+| Hierarchy | esquerda | clique seleciona · arraste um objeto sobre outro = vira filho · botão direito = criar/renomear/excluir |
+| Scene | centro | W/E/R = mover/girar/escalar · botão do meio ou direito arrasta · roda = zoom · F = focar |
+| Inspector | direita | edite os valores (clique e digite, ou arraste sobre o nome do campo) · **Adicionar Componente** |
+| Project | embaixo | pastas do projeto · botão direito → **Criar → Script** · clique duplo abre no VS Code |
+| Console | aba embaixo | mensagens, erros dos scripts e os `print()` do jogo |
+| **► Play** | barra de cima (Ctrl+P) | roda a cena atual numa janela |
+| Atalhos | — | Ctrl+S salva a cena · Ctrl+Z desfaz (Ctrl+Y refaz) · Ctrl+D duplica · Del exclui |
 
 ### Criar um script
 
@@ -60,13 +60,13 @@ A janela abre maximizada; arraste as bordas entre os painéis para mudar o taman
 from engine2d import Componente
 
 class Jogador(Componente):
-    CAMPOS = {"velocidade": "float"}     # aparece no Inspector (= variável pública na Unity)
+    CAMPOS = {"velocidade": "float"}     # aparece no Inspector para editar
     velocidade = 200.0
 
-    def iniciar(self):                   # = Start()
+    def iniciar(self):                   # roda uma vez, antes do primeiro quadro
         pass
 
-    def atualizar(self, dt):             # = Update()
+    def atualizar(self, dt):             # roda todo quadro (dt = segundos desde o último)
         dx, dy = self.motor.entrada.direcao_wasd()
         self.transform.x += dx * self.velocidade * dt
         self.transform.y += dy * self.velocidade * dt
@@ -75,16 +75,16 @@ class Jogador(Componente):
 3. Salve. O editor recarrega sozinho. Selecione um objeto → **Adicionar Componente → Scripts → Jogador**.
 4. **► Play**.
 
-| Unity (C#) | Engine2D (Python) |
+| Para | Código |
 |---|---|
-| `GetComponent<Rigidbody2D>()` | `self.obter(CorpoRigido)` |
-| `GameObject.Find("jogador")` | `self.cena.encontrar("jogador")` |
-| `transform.position` | `self.transform.x`, `self.transform.y` (ou `posicao_mundo`) |
-| `Input.GetKey(KeyCode.Space)` | `self.motor.entrada.tecla("space")` |
-| `Destroy(gameObject)` | `self.gameobject.destruir()` |
-| `Instantiate(prefab, pos)` | `self.cena.instanciar(dados_do_prefab, x, y)` |
-| `OnTriggerEnter2D(Collider2D outro)` | `def ao_entrar_colisao(self, outro):` |
-| `Debug.Log("oi")` | `print("oi")` (aparece no Console) |
+| pegar outro componente do mesmo objeto | `self.obter(CorpoRigido)` |
+| achar um objeto pelo nome | `self.cena.encontrar("jogador")` |
+| posição | `self.transform.x`, `self.transform.y` (ou `posicao_mundo`) |
+| tecla apertada | `self.motor.entrada.tecla("space")` |
+| destruir o objeto | `self.gameobject.destruir()` |
+| criar a partir de um prefab | `self.cena.instanciar("Assets/Prefabs/x.prefab", x, y)` |
+| reagir a uma colisão | `def ao_entrar_colisao(self, outro):` |
+| escrever no Console | `print("oi")` |
 
 ### Organização de um projeto
 
@@ -108,7 +108,7 @@ Para rodar um projeto sem o editor: `python rodar.py MeuJogo`.
 - `Assets/Scripts/Jogador.py`, `Moeda.py`, `Placar.py`: scripts comentados.
 - `Assets/Agentes/inimigos.agt`: zumbis e ondas escritos na AgentDSL.
 - `Assets/Scripts/AcoesDSL.py`: cria a ação `avisar(...)` para a DSL a partir do Python (`@acao_dsl`).
-- A câmera é filha do jogador na Hierarchy (por isso segue ele), como na Unity.
+- A câmera é filha do jogador na Hierarchy (por isso segue ele).
 
 ### Os dois jogos completos
 
@@ -140,23 +140,23 @@ python benchmark_engine.py
 
 ## Parte 1 — Engine2D (Computação Gráfica)
 
-### Como se usa (parecido com a Unity)
+### Como se usa
 
 ```python
 from engine2d import Motor, Cena, Componente, SpriteRenderer, CorpoRigido, Colisor
 
-class Jogador(Componente):                 # equivale a um MonoBehaviour
+class Jogador(Componente):                 # um comportamento é um componente
     CAMPOS = {"velocidade": "float"}        # aparece e é editável no inspector
     velocidade = 200.0
 
-    def iniciar(self):                      # Start()
-        self.rb = self.obter(CorpoRigido)   # GetComponent<Rigidbody2D>()
+    def iniciar(self):                      # antes do primeiro quadro
+        self.rb = self.obter(CorpoRigido)   # outro componente do mesmo objeto
 
-    def atualizar(self, dt):                # Update()
+    def atualizar(self, dt):                # todo quadro
         dx, dy = self.motor.entrada.direcao_wasd()
         self.rb.vx, self.rb.vy = dx * self.velocidade, dy * self.velocidade
 
-    def ao_entrar_colisao(self, outro):     # OnTriggerEnter2D()
+    def ao_entrar_colisao(self, outro):     # quando encosta em outro colisor
         print("encostou em", outro.gameobject.nome)
 
 cena = Cena()
@@ -166,16 +166,16 @@ cena.criar("jogador", 640, 360, componentes=[
 Motor(pasta_assets="assets").executar(cena)
 ```
 
-| Conceito Unity | Engine2D | Arquivo |
+| Peça | O que faz | Arquivo |
 |---|---|---|
-| GameObject / Transform (hierarquia) | `GameObject`, `Transform` (pose local; mundo = pai ∘ local) | `objeto.py` |
-| MonoBehaviour (Start, Update, LateUpdate, OnTrigger, OnGUI, OnDestroy) | `Componente` (`iniciar`, `atualizar`, `atualizar_tardio`, `ao_entrar_colisao`, `desenhar_ui`, `ao_destruir`) | `objeto.py` |
-| Scene, Find, Destroy, Instantiate, prefab | `Cena` (`encontrar`, `destruir`, `instanciar`, prefabs em dict/JSON, cena salva em JSON) | `cena.py` |
-| SpriteRenderer, Rigidbody2D, Collider2D, Animator | `SpriteRenderer`, `CorpoRigido`, `Colisor` (círculo/caixa, gatilho, camadas), `Animador` | `componentes.py` |
-| Physics2D (layers, OverlapCircle) | `Fisica`: grade espacial, MTV, eventos entrar/sair, `consultar_circulo` | `fisica.py` |
-| Input | `Entrada` (teclas, eixos, mouse em tela/mundo) | `entrada.py` |
-| OnGUI / Canvas | `CamadaUI` (modo imediato: texto, barras, botões, janelas modais) | `ui.py` |
-| Editor (Hierarchy, Inspector, Scene view, Play/Pause) | `Editor` (F1) | `editor.py` |
+| `GameObject`, `Transform` | objeto da cena e sua pose local; mundo = pai ∘ local (hierarquia) | `objeto.py` |
+| `Componente` | comportamento: `iniciar`, `atualizar`, `atualizar_tardio`, `ao_entrar_colisao`, `desenhar_ui`, `ao_destruir` | `objeto.py` |
+| `Cena` | `encontrar`, `destruir`, `instanciar`, prefabs, cena salva em JSON | `cena.py` |
+| `SpriteRenderer`, `CorpoRigido`, `Colisor`, `Animador`, `Luz2D`... | desenho, física (círculo/caixa, gatilho, camadas), animação, luz | `componentes.py` |
+| `Fisica` | gravidade, grade espacial, MTV, eventos entrar/sair, raios | `fisica.py` |
+| `Entrada` | teclas, eixos, mouse em tela/mundo | `entrada.py` |
+| `CamadaUI` | interface em modo imediato: texto, barras, botões, janelas | `ui.py` |
+| `Editor` (F1) | inspetor de depuração dentro do jogo | `editor.py` |
 
 ### Inspetor de depuração (F1, dentro dos jogos de demonstração)
 
@@ -252,7 +252,7 @@ agente elite {
 | AST | `ast.py` | `python -m agentdsl ast` imprime a árvore |
 | Semântico | `semantica.py` | tabela de símbolos com escopos, herança, `agente` × `modelo`, ligação de variáveis, inferência e checagem de tipos (incl. `modelo`/`crenca`), sugestões "quis dizer…?" |
 | Execução | `interpretador.py` | instâncias de modelos, fila de eventos, unificação, contexto com backtracking, negação por falha, erros de execução isolados |
-| Integração | `componente.py` | `ServicoAgentes` (temporizadores, invocações, ciclo no LateUpdate) e `ComportamentoAgente` (ações → GameObject, percepções → crenças) |
+| Integração | `componente.py` | `ServicoAgentes` (temporizadores, invocações, ciclo em `atualizar_tardio`) e `ComportamentoAgente` (ações → GameObject, percepções → crenças) |
 
 ## Resultados (AMD Radeon Vega 8 integrada, Python 3.13, 20/11/2026)
 

@@ -74,7 +74,7 @@ def test_nome_do_script_mantem_maiusculas(tmp_path):
 def robo(tmp_path):
     import os
     os.environ["ENGINE2D_SEM_RECENTES"] = "1"
-    from editor_unity.robo import RoboEditor
+    from editor_visual.robo import RoboEditor
     proj = Projeto.criar(tmp_path / "Teste", "Teste")
     r = RoboEditor(proj.raiz)
     yield r
@@ -249,7 +249,7 @@ def test_robo_clica_num_bloco_da_fase_e_edita(tmp_path):
     """No Pulo Verde: clicar num bloco da fase seleciona o mapa com esse bloco no pincel; pintar muda a fase."""
     import os
     os.environ["ENGINE2D_SEM_RECENTES"] = "1"
-    from editor_unity.robo import RoboEditor
+    from editor_visual.robo import RoboEditor
     proj = tmp_path / "Plat"
     shutil.copytree(RAIZ / "ProjetoPlataforma", proj, ignore=shutil.ignore_patterns("Library", "Saves", "__pycache__"))
     r = RoboEditor(proj)
@@ -310,7 +310,7 @@ def test_textura_que_falta_vira_xadrez():
 @pytest.mark.gpu
 def test_editor_fluxo_basico(tmp_path):
     import pygame
-    from editor_unity.app import EditorApp
+    from editor_visual.app import EditorApp
     proj = tmp_path / "Copia"
     shutil.copytree(RAIZ / "ProjetoExemplo", proj, ignore=shutil.ignore_patterns("Library", "__pycache__"))
     app = EditorApp(str(proj))

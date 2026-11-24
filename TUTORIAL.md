@@ -4,8 +4,6 @@ Este tutorial mostra tudo o que dá para fazer com a engine e como fazer, refaze
 **Coletor de Moedas** (o `ProjetoExemplo`): um personagem que anda com WASD, pega moedas, atira com o
 mouse e é perseguido por zumbis cujo comportamento é escrito na **AgentDSL**.
 
-Se você conhece a Unity, quase tudo vai parecer familiar. As diferenças aparecem em quadros "Na Unity...".
-
 **Sumário**
 
 1. [Instalar e abrir](#1-instalar-e-abrir)
@@ -33,7 +31,7 @@ pip install -r requirements.txt
 python editor.py
 ```
 
-Abre a tela inicial (como o Unity Hub):
+Abre a tela inicial:
 
 ![Tela inicial](docs/tutorial/00_hub.png)
 
@@ -55,7 +53,7 @@ Para **jogar sem o editor**: `python jogar.py` (menu) ou `python rodar.py Projet
 |---|---|---|
 | **Hierarchy** (esquerda) | Lista os objetos da cena em árvore | Clique seleciona · clique duplo foca · arraste um objeto **sobre** outro para virar filho (solte no vazio para voltar à raiz) · botão direito: criar, renomear, duplicar, salvar como prefab, excluir · botão **+** cria objetos |
 | **Scene** (centro) | A cena, para montar com o mouse | Clique seleciona · arraste move · **W/E/R** = mover/girar/escalar (alças coloridas: vermelho = X, verde = Y) · **Ctrl** ao arrastar encaixa na grade · botão do meio ou direito arrasta a visão · roda = zoom · **F** foca no selecionado · o retângulo branco é o que a câmera do jogo vai mostrar |
-| **Inspector** (direita) | Propriedades do selecionado | Clique num valor e digite (Enter confirma, Esc cancela) · **arraste sobre o nome** de um número para mudar (como na Unity; Shift = mais rápido) · caixinha ao lado do componente liga/desliga · **…** remove/move/edita o script · **Adicionar Componente** |
+| **Inspector** (direita) | Propriedades do selecionado | Clique num valor e digite (Enter confirma, Esc cancela) · **arraste sobre o nome** de um número para mudar (Shift = mais rápido) · caixinha ao lado do componente liga/desliga · **…** remove/move/edita o script · **Adicionar Componente** |
 | **Project** (embaixo) | Arquivos do projeto (pasta `Assets`) | Clique duplo abre (pasta, cena, script no VS Code) · botão direito: **Criar → Script / Agente DSL / Pasta / Cena**, renomear, excluir · arraste arquivos para a Scene ou para campos do Inspector · arraste arquivos do Windows para dentro do editor para importar |
 | **Console** (aba embaixo) | Mensagens, erros e os `print()` do jogo | **Limpar** apaga · erros aparecem em vermelho |
 | **► Play** (topo) | Roda a cena numa janela | Ctrl+P também · aperte de novo (**■ Parar**) para fechar |
@@ -184,8 +182,7 @@ Um **prefab** é um objeto salvo como arquivo (`.prefab`), para criar cópias. P
 da Hierarchy para o painel Project (ou botão direito → *Salvar como prefab*). Para usar, arraste o `.prefab`
 para a Scene, ou crie pelo código com `self.cena.instanciar("Assets/Prefabs/bala.prefab", x, y)`.
 
-> **Na Unity...** é igual: GameObject, Transform, componentes, prefabs. A diferença é que os scripts são
-> em Python e a cena é salva num JSON legível.
+> Os scripts são em Python e a cena é salva num JSON legível (dá para abrir e ler o arquivo .cena).
 
 ---
 
@@ -237,14 +234,14 @@ from engine2d import Componente, CorpoRigido
 
 
 class Jogador(Componente):
-    # Campos que aparecem no Inspector (como as variáveis públicas na Unity)
+    # Campos que aparecem no Inspector para editar
     CAMPOS = {"velocidade": "float"}
     velocidade = 220.0
 
-    def iniciar(self):                       # roda uma vez no começo (= Start)
-        self.corpo = self.obter(CorpoRigido)  # = GetComponent<Rigidbody2D>()
+    def iniciar(self):                       # roda uma vez no começo
+        self.corpo = self.obter(CorpoRigido)  # o CorpoRigido deste mesmo objeto
 
-    def atualizar(self, dt):                 # roda todo quadro (= Update); dt = segundos
+    def atualizar(self, dt):                 # roda todo quadro; dt = segundos
         dx, dy = self.motor.entrada.direcao_wasd()
         self.corpo.vx = dx * self.velocidade
         self.corpo.vy = dy * self.velocidade
@@ -309,7 +306,7 @@ objetos. `outro` é o Colisor do outro objeto. Acrescente ao `Jogador`:
         self.corpo = self.obter(CorpoRigido)
         self.pontos = 0
 
-    def ao_entrar_colisao(self, outro):          # = OnTriggerEnter2D
+    def ao_entrar_colisao(self, outro):          # quando encosta em outro colisor
         objeto = outro.gameobject
         if objeto.tag == "moeda":
             self.pontos += 1
@@ -333,7 +330,7 @@ class Placar(Componente):
         self.texto = self.obter(TextoUI)
 
     def atualizar(self, dt):
-        jogador = self.cena.encontrar("jogador")         # = GameObject.Find("jogador")
+        jogador = self.cena.encontrar("jogador")         # acha o objeto pelo nome
         if jogador is None:
             return
         j = jogador.obter("Jogador")                      # pode buscar o componente pelo nome
@@ -341,7 +338,7 @@ class Placar(Componente):
         self.texto.texto = f"Pontos: {j.pontos}    Moedas restantes: {moedas}"
 ```
 
-> Outra forma de desenhar na tela é o método `desenhar_ui(self, ui)` (parecido com o `OnGUI` da Unity):
+> Outra forma de desenhar na tela é o método `desenhar_ui(self, ui)` (roda todo quadro):
 > `ui.texto(x, y, "oi", 20)`, `ui.barra(...)`, `ui.botao(...)`. Veja a [referência](#interface-desenhar_ui).
 
 ### 4.10 Atirar com o mouse (prefab + Instantiate)
@@ -413,7 +410,7 @@ class Jogador(Componente):
     def atirar(self, mx, my):
         x, y = self.transform.posicao_mundo
         angulo = math.degrees(math.atan2(my - y, mx - x))
-        bala = self.cena.instanciar("Assets/Prefabs/bala.prefab", x, y)    # = Instantiate(prefab)
+        bala = self.cena.instanciar("Assets/Prefabs/bala.prefab", x, y)    # cópia do prefab
         bala.transform.rotacao = angulo
         corpo_bala = bala.obter("CorpoRigido")
         corpo_bala.vx = math.cos(math.radians(angulo)) * self.velocidade_bala
@@ -844,15 +841,15 @@ está em [GRAMATICA.md](GRAMATICA.md).
 
 ### Métodos que você pode escrever
 
-| Método | Quando roda | Na Unity |
-|---|---|---|
-| `iniciar(self)` | uma vez, antes do primeiro quadro | `Start` |
-| `atualizar(self, dt)` | todo quadro | `Update` |
-| `atualizar_tardio(self, dt)` | todo quadro, depois de todos os `atualizar` | `LateUpdate` |
-| `ao_entrar_colisao(self, outro)` | começou a encostar | `OnTriggerEnter2D` / `OnCollisionEnter2D` |
-| `ao_sair_colisao(self, outro)` | parou de encostar | `OnTriggerExit2D` |
-| `desenhar_ui(self, ui)` | todo quadro, para desenhar na tela | `OnGUI` |
-| `ao_destruir(self)` | quando o objeto é destruído | `OnDestroy` |
+| Método | Quando roda |
+|---|---|
+| `iniciar(self)` | uma vez, antes do primeiro quadro |
+| `atualizar(self, dt)` | todo quadro |
+| `atualizar_tardio(self, dt)` | todo quadro, depois de todos os `atualizar` |
+| `ao_entrar_colisao(self, outro)` | começou a encostar |
+| `ao_sair_colisao(self, outro)` | parou de encostar |
+| `desenhar_ui(self, ui)` | todo quadro, para desenhar na tela |
+| `ao_destruir(self)` | quando o objeto é destruído |
 
 ### Entrada (`self.motor.entrada`)
 
@@ -948,7 +945,7 @@ Todos os jogos abrem em **tela cheia** (o jogo é desenhado na resolução dele 
   projetam sombras dos meteoros e inimigos (ProjetorSombra2D); cada tiro leva sua luz; as explosões dão um
   clarão laranja que se apaga; o chefe tem uma luz vermelha pulsando; fogo, escudo e partículas são aditivos.
 - Arte, sons e fonte: pacote *Space Shooter Redux* da Kenney (CC0).
-- `montar_navinha.py` refaz o projeto do zero **usando o editor** com o robô (`editor_unity/robo.py`): cria as
+- `montar_navinha.py` refaz o projeto do zero **usando o editor** com o robô (`editor_visual/robo.py`): cria as
   pastas, importa os arquivos, cria os scripts pelo menu, arrasta as imagens, preenche o Inspector, cria os
   prefabs arrastando para o Project e salva as cenas. É o mesmo caminho que uma pessoa faria com o mouse.
 

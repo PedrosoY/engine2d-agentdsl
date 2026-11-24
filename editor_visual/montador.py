@@ -21,7 +21,7 @@ class Montador:
         self.destino = Path(destino)
         if self.destino.exists():
             shutil.rmtree(self.destino)
-        Projeto.criar(self.destino, nome)               # o mesmo que "Novo projeto..." no Hub
+        Projeto.criar(self.destino, nome)               # o mesmo que "Novo projeto..." na tela inicial
         self.r = RoboEditor(self.destino, tamanho=(1600, 900), visivel=ver)
         self.app = self.r.app
         self.configurar(largura=largura, altura=altura)

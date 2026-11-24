@@ -100,7 +100,7 @@ ponto porque a parte fracionária exige um dígito depois do `.`.
   impede que um laço de eventos trave o quadro da engine.
 - Um erro em tempo de execução (ex.: divisão por zero com variáveis) é
   registrado no log e interrompe só aquele plano; o jogo continua.
-- Na engine, o ciclo de raciocínio roda em `atualizar_tardio` (LateUpdate):
+- Na engine, o ciclo de raciocínio roda em `atualizar_tardio` (depois dos scripts do quadro):
   primeiro os componentes do jogo geram as percepções do quadro, depois os
   agentes reagem. Percepções que não mudaram não geram eventos; "pulsos"
   (como `atingido(D)`) entram num quadro e saem no seguinte.

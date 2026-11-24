@@ -18,7 +18,7 @@ RAIZ = Path(__file__).resolve().parent
 sys.path.insert(0, str(RAIZ))
 os.environ.setdefault("ENGINE2D_SEM_RECENTES", "1")
 
-from editor_unity.montador import Montador  # noqa: E402
+from editor_visual.montador import Montador  # noqa: E402
 
 KENNEY = RAIZ / "assets" / "kenney_platformer"
 SPR = KENNEY / "Sprites"

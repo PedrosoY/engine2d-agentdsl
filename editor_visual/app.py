@@ -1104,7 +1104,7 @@ class EditorApp(HierarquiaMixin, SceneMixin, InspectorMixin, PincelMapaMixin, Pr
     # =========================================================================
     def _desenhar_hub(self, ui):
         ui.retangulo((0, 0, self.W, self.H), COR["fundo2"], raio=0)
-        ui.texto(60, 50, "Engine2D Hub", 30, negrito=True, sombra=False)
+        ui.texto(60, 50, "Engine2D — Projetos", 30, negrito=True, sombra=False)
         ui.texto(60, 92, "Abra um projeto ou crie um novo.", 15, sombra=False, cor=COR["texto2"])
         if botao(ui, (60, 130, 170, 34), "Novo projeto...", destacado=True):
             self.menu_novo_projeto()
